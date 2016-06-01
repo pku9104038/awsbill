@@ -1,0 +1,34 @@
+# -*- coding: utf-8 -*-
+
+tmp_dir: tmp
+data_dir: data
+
+output:
+ filename: chengji.csv
+ xuenian: XN #学年
+ xueqi: XQ #学期
+ kaoshi: KS #考试
+ date: DATE #考试日期
+ ruxue: RXNF #入学年度
+ nianji: NJ #年级
+ banji: BJ #班级
+ xm: XM #姓名
+ xk: XK #学科
+ cj: CJ #成绩
+
+
+bills:
+ bill-prefix: 316674983838-aws-billing-detailed-line-items-with-resources-and-tags-ACTS-
+ raw-prefix: raw-data/
+ proc-prefix: proc-data/
+
+usertags:
+ prefix: user
+ tags:
+  - tag: Bill
+  - tag: billTag
+  - tag: Customer
+  - tag: Name
+  - tag: Division
+  - tag: Project
+
