@@ -1,26 +1,23 @@
 # -*- coding: utf-8 -*-
 
-tmp_dir: tmp
-data_dir: data
+dir:
+ tmp: tmp
+ data: data
 
-output:
- filename: chengji.csv
- xuenian: XN #学年
- xueqi: XQ #学期
- kaoshi: KS #考试
- date: DATE #考试日期
- ruxue: RXNF #入学年度
- nianji: NJ #年级
- banji: BJ #班级
- xm: XM #姓名
- xk: XK #学科
- cj: CJ #成绩
+awsprofile: default
 
+s3buckets:
+ bill: edusoft-aws-bill
+ work: edusoft-aws-bill-work
 
-bills:
+s3prefix:
  bill-prefix: 316674983838-aws-billing-detailed-line-items-with-resources-and-tags-ACTS-
- raw-prefix: raw-data/
- proc-prefix: proc-data/
+ invoice-prefix: invoice/
+ estimate-prefix: estimate/
+ extract-prefix: extract/
+ transform-prefix: transform/
+ processed-bills: processed-bills.csv
+
 
 usertags:
  prefix: user
@@ -31,4 +28,5 @@ usertags:
   - tag: Name
   - tag: Division
   - tag: Project
-
+ projectTag: "user:Project"
+ ztjyTag: "Shanghai Edu ZTJY"

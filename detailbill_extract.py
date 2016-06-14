@@ -19,7 +19,7 @@ data_dir = os.path.join(curdir, data_dir)
 tmp_dir = yaml_obj.get('tmp_dir')
 tmp_dir = os.path.join(curdir, tmp_dir)
 
-bills = yaml_obj.get('bills')
+bills = yaml_obj.get('s3prefix')
 bills_prefix = bills['bill-prefix']
 raw_prefix = bills['raw-prefix']
 proc_prefix = bills['proc-prefix']
