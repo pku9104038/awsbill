@@ -35,7 +35,7 @@ for tag in taglist:
 projectTag = 'user:Project'
 ztjyTag = 'Shanghai Edu ZTJY'
 
-session = boto3.Session(profile_name='bill')
+session = boto3.Session(profile_name='default')
 # Any clients created from this session will use credentials
 # from the [bill] section of ~/.aws/credentials.
 client = session.client('s3')
