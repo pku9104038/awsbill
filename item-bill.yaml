@@ -30,3 +30,16 @@ usertags:
   - tag: Project
  projectTag: "user:Project"
  ztjyTag: "Shanghai Edu ZTJY"
+
+
+columns:
+ UnBlendedCost: UnBlendedCost
+ RecordType: RecordType
+ NullRate: NullRate
+ InvoiceID: InvoiceID
+
+RecordType:
+ LineItem: LineItem
+
+InvoiceID:
+ Estimated: Estimated
