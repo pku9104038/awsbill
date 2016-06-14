@@ -34,6 +34,17 @@ class ProcessingEnv(object):
         self.projectTag = __tags['projectTag']
         self.ztjyTag = __tags['ztjyTag']
 
+        __columns = __yaml_obj.get('columns')
+        self.UnBlendedCost = __columns['UnBlendedCost']
+        self.RecordType = __columns['RecordType']
+        self.NullRate = __columns['NullRate']
+        self.InvoiceID = __columns['InvoiceID']
+
+        __recordtype = __yaml_obj.get('RecordType')
+        self.LineItem = __recordtype['LineItem']
+        __invoiceID = __yaml_obj.get('InvoiceID')
+        self.Estimated = __invoiceID['Estimated']
+
         __s3buckets = __yaml_obj.get('s3buckets')
         __bill_bucket_name = __s3buckets['bill']
         __work_bucket_name = __s3buckets['work']
@@ -57,7 +68,8 @@ def extractZipBill(procenv,bucket_name, object_key):
         file.write(data)
         file.close()
         data = pandas.read_csv(file.name, dtype=object, low_memory=False)
-        df = data[(data['RecordType'] == 'LineItem')]
+        os.remove(file.name)
+        df = data[(data[procenv.RecordType] == procenv.LineItem)]
 
         columns = list(df.columns.values)
         for tag in procenv.billTags:
@@ -67,10 +79,10 @@ def extractZipBill(procenv,bucket_name, object_key):
                 else:
                     df[tag] = df.apply(lambda _: numpy.nan, axis=1)
 
-        df_null = df[(df['user:Project'].isnull())]
-        df_totalcost = df['UnBlendedCost']
+        df_null = df[(df[procenv.projectTag].isnull())]
+        df_totalcost = df[procenv.UnBlendedCost]
         df_totalcost = pandas.to_numeric(df_totalcost)
-        df_nullcost = df_null['UnBlendedCost']
+        df_nullcost = df_null[procenv.UnBlendedCost]
         df_nullcost = pandas.to_numeric(df_nullcost)
         sum_total = df_totalcost.sum()
         sum_null = df_nullcost.sum()
@@ -79,9 +91,18 @@ def extractZipBill(procenv,bucket_name, object_key):
         else:
             null_rate = sum_total / (sum_total - sum_null)
 
-        df['NullRate'] = df.apply(lambda _: null_rate, axis=1)
+        df[procenv.NullRate] = df.apply(lambda _: null_rate, axis=1)
 
         df.to_csv(os.path.join(procenv.data_dir, filename[len(procenv.bills_prefix):]), index=False)
+        if df.loc[0,procenv.InvoiceID] == procenv.Estimated:
+            prefix = procenv.estimate_prefix
+        else:
+            prefix = procenv.invoice_prefix
+
+        data = open(os.path.join(procenv.data_dir, filename[len(procenv.bills_prefix):]),'r')
+        obj = procenv.proc_bucket.upload_file(os.path.join(procenv.data_dir, filename[len(procenv.bills_prefix):]), \
+                                           prefix + filename[len(procenv.bills_prefix):])
+
         """
         if firstCSV:
             dframe = df.copy()
