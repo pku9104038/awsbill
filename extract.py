@@ -11,7 +11,7 @@ def main():
     sys.setdefaultencoding('utf8')
     curdir = os.path.abspath(os.path.curdir)
 
-    procenv = bill.extract.ProcessingEnv(curdir)
+    procenv = bill.ProcessingEnv(curdir)
 
 
 
