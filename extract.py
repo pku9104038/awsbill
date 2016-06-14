@@ -2,7 +2,7 @@
 
 import sys
 import os
-from bill.extract import ProcessingEnv
+from bill import extract
 
 
 
@@ -11,7 +11,7 @@ def main():
     sys.setdefaultencoding('utf8')
     curdir = os.path.abspath(os.path.curdir)
 
-    procenv = ProcessingEnv(curdir)
+    procenv = extract.ProcessingEnv(curdir)
 
 
 
@@ -19,7 +19,7 @@ def main():
     for obj_i in object_summary_iterator:
         if obj_i.key.find(procenv.bills_prefix) > -1:
             print obj_i.key
-
+            extract.extractZipBill(procenv, obj_i.bucket_name, obj_i.key)
 
 
 if __name__ == '__main__':
