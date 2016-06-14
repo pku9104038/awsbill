@@ -78,10 +78,11 @@ def extractZipBill(procenv,bucket_name, object_key):
             null_rate = 1
         else:
             null_rate = sum_total / (sum_total - sum_null)
+
         df['NullRate'] = df.apply(lambda _: null_rate, axis=1)
 
         df.to_csv(os.path.join(procenv.data_dir, filename[len(procenv.bills_prefix):]), index=False)
-
+        """
         if firstCSV:
             dframe = df.copy()
             df_tmp = dframe
@@ -90,5 +91,5 @@ def extractZipBill(procenv,bucket_name, object_key):
             data = [df_tmp, df]
             dframe = pandas.concat(data)
             df_tmp = dframe
-
+        """
     os.remove(tmpfile)
