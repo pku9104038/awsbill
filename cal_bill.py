@@ -5,6 +5,5 @@
 # Join them into cal-bills
 # Upload to S3
 
-import tag-bill
+import tag_bill
 
-print tag-bill.Config
