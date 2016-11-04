@@ -324,6 +324,18 @@ class AWS_Access(object):
         os.remove(zipfile)
 
 
+    def yyyy_mm(self, year, month):
+        """
+
+        :param year:
+        :param month:
+        :return: yyyy-mm
+        """
+        if month < 10:
+            return str(year) + "-0" + str(month)
+        else:
+            return str(year) + "-" + str(month)
+
     def get_months(self):
         """
 
@@ -347,7 +359,7 @@ class AWS_Access(object):
             end_mon = cur_mon
             while True:
 
-                month_list.append(str(year)+"-"+str(month))
+                month_list.append(self.yyyy_mm(year=year, month=month))
 
                 if year == end_year and month == end_mon:
                     break
@@ -366,11 +378,11 @@ class AWS_Access(object):
             else:
                 month = cur_mon - 1
                 year = cur_year
-            month_list.append(str(year) + "-" + str(month))
+            month_list.append(self.yyyy_mm(year=year, month=month))
         elif self.config.scope == "latest":
             year = cur_year
             month = cur_mon
-            month_list.append(str(year) + "-" + str(month))
+            month_list.append(self.yyyy_mm(year=year, month=month))
         else:
             month_list.append(self.config.scope)
 
@@ -386,7 +398,7 @@ class AWS_Access(object):
     def upload_tags_file(self):
 
         # upload to s3 processed bucket
-        csvpath = os.path.join(self.config.data_dir,self.config.cost_tags_file)
+        csvpath = os.path.join(self.config.tag_dir,self.config.cost_tags_file)
         data = open(csvpath, 'rb')
         if self.config.scope == "origin":
             csvname = self.config.cost_tags_file

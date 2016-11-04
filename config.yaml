@@ -1,0 +1,78 @@
+# -*- coding: utf-8 -*-
+
+# aws profile
+awssessions:
+  profiles:
+    aws-cn-bill: aws-cn-bill
+    aws-bill-proc: aws-bill-proc
+  buckets:
+    aws-cn-bill: edusoft-aws-bill
+    aws-bill-proc: aws-cn-bill
+  localdir:
+    aws-cn-bill: edusoft-aws-bill
+    aws-bill-proc: aws-bill-proc
+
+
+
+# dir for file processing
+dir:
+ tmp: tmp
+ data: data
+
+# aws cli config profile
+awsprofile: default
+
+# s3 bucket for bill logs and bill processed
+s3buckets:
+ bill: edusoft-aws-bill
+ work: edusoft-aws-bill-work
+
+estimate-bills: estimate-bills.csv
+
+# s3 object prefix definition
+s3prefix:
+ proc-bucket:
+  - tag-folder: tag/
+  - tag-prefix: tag-
+  - raw-folder: raw/
+  - raw-prefix: raw-
+  - proc-folder: proc/
+  - proc-prefix: proc-
+  - stat-folder: stat/
+  - stat-prefix: stat-
+ bill-prefix: 316674983838-aws-billing-detailed-line-items-with-resources-and-tags-ACTS-
+ invoice-prefix: invoice-
+ estimate-prefix: estimate-
+ raw-prefix: raw-
+ ext-prefix: ext-
+ trans-prefix: trans-
+
+
+# resource tags for bill processing
+usertags:
+ prefix: user
+ tags:
+  - tag: Bill
+  - tag: billTag
+  - tag: Customer
+  - tag: Name
+  - tag: Division
+  - tag: Project
+ projectTag: "user:Project"
+ ztjyTag: "Shanghai Edu ZTJY"
+
+
+# spacial columns in csv file
+columns:
+ UnBlendedCost: UnBlendedCost
+ RecordType: RecordType
+ NullRate: NullRate
+ InvoiceID: InvoiceID
+
+# recordtype
+RecordType:
+ LineItem: LineItem
+
+# invoiceid
+InvoiceID:
+ Estimated: Estimated
