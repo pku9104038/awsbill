@@ -208,6 +208,20 @@ class AWS_Access(object):
 
         return objs
 
+    def tag_dynamodb(self,row):
+        """
+
+        :param row:
+        :return:
+        """
+
+        if row["ProductName"] == "Amazon DynamoDB":
+            #print (row["ProductName"],self.config.lost_tag["value"])
+            return self.config.lost_tag["value"]
+        else:
+            #print (row["ProductName"], row["user:Project"])
+            return row["user:Project"]
+
     def upzip_log(self,obj_key):
         """
 
@@ -247,6 +261,10 @@ class AWS_Access(object):
                     else:
                         df[tag["tag"]] = df.apply(lambda _: numpy.nan, axis=1)
                         #df.loc[tag["tag"]] = numpy.nan
+
+            # tag dynamodb to ztjy project
+            # move to cal_bill.py
+            # df["user:Project"] = df.apply(self.tag_dynamodb, axis = 1)
 
             # save to local csv
             csvname = self.config.raw_prefix+filename[len(self.config.log_prefix):]

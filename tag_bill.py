@@ -399,6 +399,7 @@ class AWS_Access(object):
 
         # upload to s3 processed bucket
         csvpath = os.path.join(self.config.tag_dir,self.config.cost_tags_file)
+        print "open "+ csvpath
         data = open(csvpath, 'rb')
         if self.config.scope == "origin":
             csvname = self.config.cost_tags_file
