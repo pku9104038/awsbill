@@ -123,6 +123,11 @@ def getopts():
             usage()
             sys.exit()
 
+    # block all options after firstime running
+    # because this might cause history cost been recalculated
+    if scope == "all":
+        scope = "default"
+
     return scope, profile, config, operate, file
 
 # Define script scope variables

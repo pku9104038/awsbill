@@ -13,6 +13,8 @@ import getopt
 import yaml
 import numpy
 
+import config as cfg
+
 
 # Define the usage helper and get options function
 
@@ -268,16 +270,18 @@ class AWS_Access(object):
 
             # save to local csv
             csvname = self.config.raw_prefix+filename[len(self.config.log_prefix):]
-            csvpath = os.path.join(self.config.data_dir, csvname)
+            csvpath = os.path.join(self.config.raw_dir, csvname)
+            print "save csv ..." + csvpath
             df.to_csv(csvpath, index=False)
 
             # upload to s3 processed bucket
             data = open(csvpath, 'rb')
             s3key = self.config.raw_folder+csvname
+            print "upload ..." + s3key
             file_obj = self.s3_resource.Bucket(self.config.proc_bucket).put_object(Key=s3key, Body=data)
 
             # remove local csv
-            os.remove(csvpath)
+            #os.remove(csvpath)
 
         # remove zipfile
         os.remove(zipfile)
@@ -293,7 +297,11 @@ def main():
     scope, profile, config_yaml = getopts()
 
     # init config
-    config = Config(scope=scope,config_yaml=config_yaml)
+    #config = Config(scope=scope,config_yaml=config_yaml)
+
+    # init Config instance
+    config = cfg.Config(scope=scope,config_yaml=config_yaml, profile=profile)
+
 
     # init AWS_Access instance
     aws = AWS_Access(profile=profile, config=config)

@@ -14,6 +14,7 @@ import shutil
 import datetime
 import traceback
 import pandas, numpy
+import time
 
 # Define the usage helper and get options function
 
@@ -73,7 +74,7 @@ def getopts():
     scope = "latest"
     profile = "default"
     config = "config2.yaml"
-    environment = "s3"
+    environment = "local"
 
     # get options
     try:
@@ -133,6 +134,37 @@ class AWS_Access(object):
         self.session = config.session
         self.s3_client = config.s3_client
         self.s3_resource = config.s3_resource
+
+    def set_index(self,row):
+        """
+
+        :param row:
+        :return:
+        """
+        return str(row["RecordId"]) + "-" + str(row["SubscriptionId"]) + "-" +\
+                str(row["RateId"]) +"-" + str(row["LinkedAccountId"]) + "-" + \
+               str(row["InvoiceID"])
+
+    def set_index_of_records(self,data):
+        """
+
+        :param data:
+        :return:
+        """
+
+        null_recordid = data[data.RecordId.isnull()]
+        index = null_recordid.index
+        for i in index:
+            data["RecordId"][i] = data["RateId"][i] # use rate id as record id
+
+        nul_subscription = data[data.SubscriptionId.isnull()]
+        index = nul_subscription.index
+        for i in index:
+            data["SubscriptionId"][i] = data["RateId"][i]  # use rate id as record id
+
+        data["index"] = data.apply(self.set_index, axis=1)
+
+
 
     #
     def get_instance_type(self,row):
@@ -390,7 +422,7 @@ class AWS_Access(object):
 
             # DynamoDB
             if product == "Amazon DynamoDB":
-                platform =  "DynamoDB"
+                platform = "DynamoDB"
 
                 if usage_type.find("write") > -1 or usage_type.find("Write") > -1:
                     instance_type =  "WriteCapacity"
@@ -408,11 +440,13 @@ class AWS_Access(object):
                     instance_type = usage_type[colon + len(":"):]
 
                 if desc.find("Memcached") > -1:
-                    instance_type = "Memcached"
+                    #platform = "Memcached"
+                    platform = "ElastiCache"   # ElastiCache RI could show engine info
                 elif desc.find("Redis") > -1:
-                    instance_type = "Redis"
+                    #platform = "Redis"
+                    platform = "ElastiCache"
                 else:
-                    instance_type = "ElastiCache"
+                    platform = "ElastiCache"
 
             # RedShift
             elif product == "Amazon Redshift":
@@ -630,33 +664,13 @@ class AWS_Access(object):
         """
         return row["UnBlendedCost"]
 
-    def set_rds_adjust_cost(self,row, product, instance, platform, \
-                            rate, null_rate, riusage):
-        """
-
-        :param row:
-        :return:
-        """
-        #print (row["ProductName"],product)
-
-        if row["ProductName"] == product and \
-                row["InstanceType"] == instance and \
-                row["Platform"] == platform and riusage:
-            if row["UsageQuantity"] < 1.5:
-                return rate
-            else:
-                return null_rate * row["UnBlendedCost"]
-        else:
-            return row["AdjustedCost"]
-
-
     def adjust_ri_cost(self, data):
         """
 
         :param data:
         :return:
         """
-        
+
         grouped = data.groupby(["ProductName","Platform","InstanceType"])
 
         for name, group in grouped:
@@ -664,63 +678,103 @@ class AWS_Access(object):
 
             # RDS
             if product == "Amazon RDS Service":
+                # check ri purchase order
+                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
+                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
+                ri_usage = usage[usage["ReservedInstance"] == "Y"]
 
+                # if ri purchaseed
+                if len(ripo.index) > 0:
+                    # total cost
+                    cost = group["UnBlendedCost"].sum()
+                    ri_cost = ripo["UnBlendedCost"].sum()
+                    usage_cost = usage["UnBlendedCost"].sum()
 
-        # RDS
-        product = "Amazon RDS Service"
+                    # usage hours
+                    hours = usage["UsageQuantity"].sum()
+                    # ri hours
+                    ri_hours = ripo["UsageQuantity"].sum()
+                    # ri hours
+                    ri_usage_hours = ri_usage["UsageQuantity"].sum()
 
-        #get rds data
-        adjust_data = data[data["ProductName"]==product]
+                    # average cost
+                    if hours > 0:
+                        if ri_hours > ri_usage_hours: # not all ri used
+                            rate = ((ri_usage_hours/ri_hours) * ri_cost + usage_cost) / hours
+                            null_rate = (ri_hours - ri_usage_hours) / ri_hours
+                        else:
+                            rate = cost / hours
+                            null_rate = 0
 
-        # groupby InstanceType, Platform
-        grouped = adjust_data.groupby(["InstanceType","Platform"])
+                        # set AdjustedCost according to index
+                        ripo_index = ripo.index
+                        usage_index = usage.index
+                        (data["AdjustedCost"])[usage_index] = rate
+                        for idx in ripo_index:
+                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
 
-        for name, group in grouped:
+            # EC2
+            elif product == "Amazon Elastic Compute Cloud":
+                # check ri purchase order
+                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
+                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
 
-            # check ri purchase order
-            ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
-            usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
-            #ripo = group[group["UsageQuantity"] > 1.5]
-            #usage = group[group["UsageQuantity"] < 1.5]
-            ri_usage = usage[usage["ReservedInstance"] == "Y"]
+                # if ri purchaseed
+                if len(ripo.index) > 0:
+                    # used cost
+                    usage_cost = usage["UnBlendedCost"].sum()
 
-            # if ri purchaseed
-            if len(ripo.index) > 0:
-                # total cost
-                cost = group["UnBlendedCost"].sum()
-                ri_cost = ripo["UnBlendedCost"].sum()
-                usage_cost = usage["UnBlendedCost"].sum()
+                    # usage hours
+                    hours = usage["UsageQuantity"].sum()
 
+                    # average cost
+                    if hours > 0:
+                        rate = usage_cost / hours
+                        # set AdjustedCost according to index
+                        usage_index = usage.index
+                        (data["AdjustedCost"])[usage_index] = rate
 
-                # usage hours
-                hours = usage["UsageQuantity"].sum()
-                # ri hours
-                ri_hours = ripo["UsageQuantity"].sum()
-                # ri hours
-                ri_usage_hours = ri_usage["UsageQuantity"].sum()
+            # ElastiCache
+            elif product == "Amazon ElastiCache":
 
+                # RI with up front payment
+                # this sign up payment record could not tag to any project
+                # keep it as null and share cost by all projects
 
-                # average cost
-                riusage = False
-                rate = 0
-                null_rate = 1
-                if hours > 0:
-                    riusage = True
-                    if ri_hours <= hours:
-                        rate = cost / hours
-                        null_rate = 0
-                    else:
-                        rate = ri_cost*ri_usage_hours/ri_hours/hours \
-                               + usage_cost/hours
-                        null_rate = (ri_hours-ri_usage_hours)/ri_hours
+                # check ri purchase order
+                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
+                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
+                ri_usage = usage[usage["ReservedInstance"] == "Y"]
 
-                # set AdjustedCost according to index
-                ripo_index = ripo.index
-                usage_index = usage.index
-                (data["AdjustedCost"])[usage_index] = rate
-                for idx in ripo_index:
-                    data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
+                # if ri purchaseed
+                if len(ripo.index) > 0:
+                    # total cost
+                    cost = group["UnBlendedCost"].sum()
+                    ri_cost = ripo["UnBlendedCost"].sum()
+                    usage_cost = usage["UnBlendedCost"].sum()
 
+                    # usage hours
+                    hours = usage["UsageQuantity"].sum()
+                    # ri hours
+                    ri_hours = ripo["UsageQuantity"].sum()
+                    # ri hours
+                    ri_usage_hours = ri_usage["UsageQuantity"].sum()
+
+                    # average cost
+                    if hours > 0:
+                        if ri_hours > ri_usage_hours:  # not all ri used
+                            rate = ((ri_usage_hours / ri_hours) * ri_cost + usage_cost) / hours
+                            null_rate = (ri_hours - ri_usage_hours) / ri_hours
+                        else:
+                            rate = cost / hours
+                            null_rate = 0
+
+                        # set AdjustedCost according to index
+                        ripo_index = ripo.index
+                        usage_index = usage.index
+                        (data["AdjustedCost"])[usage_index] = rate
+                        for idx in ripo_index:
+                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
 
 
     def ri_analysis(self, data):
@@ -815,6 +869,42 @@ class AWS_Access(object):
         print "bill time " + usage_end_date
         print str(hours) + " hours left"
 
+    def startstamp(self, row):
+
+        try:
+            d = datetime.datetime.strptime(row["UsageStartDate"], "%Y-%m-%d %H:%M:%S.%f")
+            t = d.timetuple()
+            timeStamp = int(time.mktime(t))
+            timeStamp = float(str(timeStamp) + str("%06d" % d.microsecond)) / 1000000
+            #print timeStamp
+            return timeStamp
+        except ValueError as e:
+            #print e
+            d = datetime.datetime.strptime(row["UsageStartDate"], "%Y-%m-%d %H:%M:%S")
+            t = d.timetuple()
+            timeStamp = int(time.mktime(t))
+            timeStamp = float(str(timeStamp) + str("%06d" % d.microsecond)) / 1000000
+            #print timeStamp
+            return timeStamp
+
+    def endstamp(self, row):
+
+        try:
+            d = datetime.datetime.strptime(row["UsageEndDate"], "%Y-%m-%d %H:%M:%S.%f")
+            t = d.timetuple()
+            timeStamp = int(time.mktime(t))
+            timeStamp = float(str(timeStamp) + str("%06d" % d.microsecond)) / 1000000
+            # print timeStamp
+            return timeStamp
+        except ValueError as e:
+            # print e
+            d = datetime.datetime.strptime(row["UsageEndDate"], "%Y-%m-%d %H:%M:%S")
+            t = d.timetuple()
+            timeStamp = int(time.mktime(t))
+            timeStamp = float(str(timeStamp) + str("%06d" % d.microsecond)) / 1000000
+            # print timeStamp
+            return timeStamp
+
     def cal_bill(self, month, bill_file, tag_file):
         """
 
@@ -828,6 +918,7 @@ class AWS_Access(object):
         # read bill csv file into pandas dataframe
         print "read bill csv: " + cal_name +"..." + self.now()
         bill_data = pandas.read_csv(bill_file, low_memory=False)
+
 
         # tag metric_monitor_usage according to the instance_id
         print "tag ec2 metric monitor ......" + self.now()
@@ -894,13 +985,41 @@ class AWS_Access(object):
         self.get_bill_date(cal_data)
 
         cal_data.loc[:, 'NullRate'] = null_rate
+        cal_data["TotalCost"] = cal_data.AdjustedCost * cal_data.NullRate
+        null_data = cal_data[(cal_data["user:Project"]).isnull()]
+        index = null_data.index
+        cal_data["TotalCost"][index] = 0
+
+
 
         #cal_data['NullRate'] = cal_data.apply(lambda _: \
         #                                      null_rate,\
         #                                       axis=1)
 
+
+        #cal_data["StartStamp"] = cal_data.apply(self.startstamp,axis=1)
+        #cal_data["EndStamp"] = cal_data.apply(self.endstamp ,axis=1)
+
+        print "set index of records ......" + self.now()
+        self.set_index_of_records(cal_data)
+
+        cols = cal_data.columns.tolist()
+        cols = cols[-1:] + cols[:-1]
+        cols.remove("RecordType")
+        cols.remove("NullRate")
+        cols.remove("user:Bill")
+        cols.remove("user:billTag")
+        cols.remove("user:Division")
+        cols.remove("user:Name")
+        cols.remove("user:Customer")
+        #cols.remove("UsageStartDate")
+        #cols.remove("UsageEndDate")
+
+        cal_data = cal_data[cols]
+
         print "write to csv......" + self.now()
-        cal_data.to_csv(cal_file, index=False)
+        cal_data.to_csv(cal_file, index=False,  sep='\t')
+
 
         return cal_file, cal_name
 
@@ -946,25 +1065,30 @@ class AWS_Access(object):
 
                     # copy bills for data analysis
                     if self.config.scope == "latest":
+                        print "copy latest_month.csv......" +  self.now()
                         shutil.copy2(src= cal_file, \
                                      dst= os.path.join(self.config.cal_dir,"latest_month.csv"))
 
                     elif self.config.scope == "last":
+                        print "copy last_month.csv......" + self.now()
                         shutil.copy2(src=cal_file, \
                                      dst=os.path.join(self.config.cal_dir, "last_month.csv"))
 
                     elif self.config.scope != "all":
+                        print "copy this_month.csv......" + self.now()
                         shutil.copy2(src=cal_file, \
                                      dst=os.path.join(self.config.cal_dir, "this_month.csv"))
 
-                    # upload cal bill to s3 processed bucket
-                    data = open(cal_file, 'rb')
-                    s3key = self.config.cal_folder + cal_name
 
                     if self.config.environment == "s3":
                         print "upload " + cal_name + "......" + self.now()
+                        # upload cal bill to s3 processed bucket
+                        data = open(cal_file, 'rb')
+                        s3key = self.config.cal_folder + cal_name
                         file_obj = self.s3_resource.Bucket( \
                             self.config.proc_bucket).put_object(Key=s3key, Body=data )
+
+
 
                 except Exception as e:
                     """
