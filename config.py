@@ -115,13 +115,11 @@ class Config(object):
         self.tag_folder = bill_processed["s3_bucket"]["tag_folder"]
         self.cal_folder = bill_processed["s3_bucket"]["cal_folder"]
         self.stat_folder = bill_processed["s3_bucket"]["stat_folder"]
-        self.rst_folder = bill_processed["s3_bucket"]["rst_folder"]
 
         self.raw_prefix = bill_processed["s3_bucket"]["raw_prefix"]
         self.tag_prefix = bill_processed["s3_bucket"]["tag_prefix"]
         self.cal_prefix = bill_processed["s3_bucket"]["cal_prefix"]
         self.stat_prefix = bill_processed["s3_bucket"]["stat_prefix"]
-        self.rst_prefix = bill_processed["s3_bucket"]["rst_prefix"]
 
         # local directory
         directories = self.yaml_obj.get("directories")
@@ -130,9 +128,8 @@ class Config(object):
         self.data_dir = os.path.join(self.cwd, directories["data"])
         self.raw_dir = os.path.join(self.cwd, directories["raw"])
         self.tag_dir = os.path.join(self.cwd, directories["tag"])
-        self.cal_dir = os.path.join(self.cwd, directories["calc"])
+        self.cal_dir = os.path.join(self.cwd, directories["cal"])
         self.stat_dir = os.path.join(self.cwd, directories["stat"])
-        self.rst_dir = os.path.join(self.cwd, directories["rst"])
 
         if(not os.path.exists(self.tmp_dir)):
             os.mkdir(self.tmp_dir)
@@ -146,8 +143,6 @@ class Config(object):
             os.mkdir(self.cal_dir)
         if (not os.path.exists(self.stat_dir)):
             os.mkdir(self.stat_dir)
-        if (not os.path.exists(self.rst_dir)):
-            os.mkdir(self.rst_dir)
 
         # tags
         self.bill_tags = self.yaml_obj.get("bill_tags")
@@ -157,6 +152,10 @@ class Config(object):
         self.cost_tags_file = self.yaml_obj.get("cost_tags")["tags_file"]
         self.cost_start = self.yaml_obj.get("cost_tags")["start_month"]
         self.cost_tags_join_key = self.yaml_obj.get("cost_tags")["join_key"]
+
+        # bill columns
+        self.bill_columns = self.yaml_obj.get("bill_columns")
+        print self.bill_columns
 
         # aws seesion
         self.profile = profile

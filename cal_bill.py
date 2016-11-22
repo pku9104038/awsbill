@@ -543,8 +543,12 @@ class AWS_Access(object):
 
                 if desc.find("Linux") > -1:
                     platform = "Linux"
+                elif desc.find("RHEL") > -1:
+                    platform = "RHEL"
                 elif desc.find("Windows") > -1:
                     platform = "Windows"
+                elif desc.find("SQL Std") > -1:
+                    platform = "SQL Std"
                 elif desc.find("LoadBalancer") > -1:
                     platform = "ELB"
                 elif desc.find("Elastic IP") > -1:
@@ -586,43 +590,28 @@ class AWS_Access(object):
 
 
 
-    def tag_metric_monitor_usage(self, row, data, dummy):
+    def tag_metric_monitor_usage(self, data):
         """
 
-        :param row:
         :param data:
         :return:
         """
+
         project = None
         grouped = data.groupby(["ProductName","UsageType","ResourceId"])
         for name,group in grouped:
             if name[0] == "Amazon Elastic Compute Cloud" and \
                 name[1].find("MetricMonitorUsage") > -1:
                 instance = name[2].find("instance/")
-                instance_id = name[2][instance + len("instance/"):]
-
-                instance_data = data[data["ResourceId"] == instance_id]["user:Project"]
-                project = instance_data[instance_data.first_valid_index()]
-
-                index = group.index
-                data["user:Project"][index] = project
-
-        """
-        if row["ProductName"] == "Amazon Elastic Compute Cloud":
-            if row["UsageType"].find("MetricMonitorUsage") > -1:
-                resource_id = row["ResourceId"]
-                instance = resource_id.find("instance/")
-                if instance > -1:
-                    instance_id = resource_id[instance+len("instance/"):]
-
-                    #instance_data = data[data["ResourceId"] == instance_id]["user:Project"]
-                    #project = instance_data[instance_data.first_valid_index()]
-
+                if instance > 0:
+                    instance_id = name[2][instance + len("instance/"):]
                     instance_data = data[data["ResourceId"] == instance_id]
-                    idx = instance_data.index
-                    project = data["user:Project"][idx[0]]
-        """
-        return project
+                    project_data = instance_data[~(instance_data["user:Project"].isnull())]
+                if len(project_data.index) > 0:
+                        project = project_data["user:Project"][project_data.first_valid_index()]
+                        index = group.index
+                        data["user:Project"][index] = project
+
 
     def tag_by_resourceid_group(self,data):
         """
@@ -643,8 +632,6 @@ class AWS_Access(object):
                     project = project_data["user:Project"][project_data.first_valid_index()]
                     data["user:Project"][index] = project
 
-
-
     def set_dynamodb_project(self, row):
         """
 
@@ -662,7 +649,7 @@ class AWS_Access(object):
 
         :return:
         """
-        return row["UnBlendedCost"]
+        return float(row["UnBlendedCost"])
 
     def adjust_ri_cost(self, data):
         """
@@ -852,7 +839,7 @@ class AWS_Access(object):
         :param data:
         :return:
         """
-
+        """
         ondemand = data[(data.ItemDescription != "Recurring Fee") \
                            & (data.ItemDescription != "税金 VAT 类型") \
                         & (data.ReservedInstance == "N")]
@@ -868,6 +855,25 @@ class AWS_Access(object):
         hours = left_datetime.seconds/60/60 + left_datetime.days*24
         print "bill time " + usage_end_date
         print str(hours) + " hours left"
+
+        """
+
+        this_month = data[data.Platform != "Support"]
+        latest_start = this_month["UsageStartDate"].max()
+        start_datetime = datetime.datetime.strptime(latest_start, \
+                                                   "%Y-%m-%d %H:%M:%S")
+        onehour = datetime.timedelta(hours=1)
+        end_datetime = start_datetime + onehour
+
+
+        VAT = data[data.ItemDescription == "税金 VAT 类型"]
+        vat_end_date = VAT["UsageEndDate"].max()
+        end_of_month = datetime.datetime.strptime(vat_end_date, \
+                                                  "%Y-%m-%d %H:%M:%S")
+        left_datetime = end_of_month - end_datetime
+        hours = left_datetime.seconds / 60 / 60 + left_datetime.days * 24
+        print "bill time " + str(end_datetime)
+        print "this month [ "+ str(hours) + " ] hours left"
 
     def startstamp(self, row):
 
@@ -905,6 +911,16 @@ class AWS_Access(object):
             # print timeStamp
             return timeStamp
 
+    def trim_project_tag(self,data):
+        """
+
+        :param data:
+        :return:
+        """
+
+
+
+
     def cal_bill(self, month, bill_file, tag_file):
         """
 
@@ -912,12 +928,10 @@ class AWS_Access(object):
         :param tag_file:
         :return: cal_file, cal_name
         """
-        cal_name = self.config.cal_prefix + month + ".csv"
-        cal_file = os.path.join(self.config.cal_dir, cal_name)
 
         # read bill csv file into pandas dataframe
-        print "read bill csv: " + cal_name +"..." + self.now()
-        bill_data = pandas.read_csv(bill_file, low_memory=False)
+        print "read bill raw csv: " + month +"......" + self.now()
+        bill_data = pandas.read_csv(bill_file, dtype={"InvoiceID" : object}, low_memory=False)
 
 
         # tag metric_monitor_usage according to the instance_id
@@ -925,7 +939,7 @@ class AWS_Access(object):
         pad = True
         #bill_data["user:Project"] = bill_data.apply(self.tag_metric_monitor_usage, \
         #                                            args = (bill_data, True), axis=1)
-        self.tag_metric_monitor_usage(row=False, data = bill_data, dummy=True)
+        self.tag_metric_monitor_usage(data = bill_data)
 
         # set dynamodb lost tag to ztjy only
         print "tag dynamodb ......"+ self.now()
@@ -944,10 +958,44 @@ class AWS_Access(object):
 
         # left join merge bill and tags
         print "merge bill ......"+ self.now()
+        #bill_data.apply(self.trim_project_tag,bill_data)
         cal_data = pandas.merge(left=bill_data,right=tag_data, how="left", \
                                 on=self.config.cost_tags_join_key)
 
-        # add InstanceType column
+        """
+        # test code to find some merge error
+        # and found that it was caused by tag with white space
+
+        cal_data = bill_data
+        cal_data.loc[:,"ProjectGroup"] = None
+        cal_data.loc[:, "CostDivision"] = None
+        """
+        """
+        grouped = tag_data.groupby("user:Project")
+
+        for name, group in grouped:
+            tag = name
+            index = (bill_data[bill_data["user:Project"]==tag]).index
+            print (tag, len(index) )
+            if len(index) > 0:
+                cal_data["ProjectGroup"][index] = group["ProjectGroup"][group.first_valid_index()]
+                cal_data["CostDivision"][index] = group["CostDivision"][group.first_valid_index()]
+        """
+        """
+        grouped = cal_data.groupby("user:Project")
+
+        for name, group in grouped:
+            tag = name
+            index = (bill_data[bill_data["user:Project"] == tag]).index
+            print (tag, len(index))
+            if len(index) > 0:
+                cal_data["ProjectGroup"][index] = tag_data["ProjectGroup"][tag_data.first_valid_index()]
+                cal_data["CostDivision"][index] = tag_data["CostDivision"][tag_data.first_valid_index()]
+
+        """
+
+
+                # add InstanceType column
         #print "add InstanceType...."+ self.now()
         #cal_data["InstanceType"] = cal_data.apply(self.get_instance_type, axis=1)
 
@@ -969,7 +1017,7 @@ class AWS_Access(object):
         self.adjust_ri_cost(data = cal_data)
 
 
-        print "set null rate......"+ self.now()
+        print "calc TotalCost......"+ self.now()
         df_null = cal_data[(cal_data['user:Project'].isnull())]
         #df_totalcost = cal_data['AdjustedCost'].sum()
         #df_totalcost = pandas.to_numeric(df_totalcost)
@@ -991,18 +1039,15 @@ class AWS_Access(object):
         cal_data["TotalCost"][index] = 0
 
 
-
-        #cal_data['NullRate'] = cal_data.apply(lambda _: \
-        #                                      null_rate,\
-        #                                       axis=1)
-
-
         #cal_data["StartStamp"] = cal_data.apply(self.startstamp,axis=1)
         #cal_data["EndStamp"] = cal_data.apply(self.endstamp ,axis=1)
 
         print "set index of records ......" + self.now()
         self.set_index_of_records(cal_data)
 
+        cols = self.config.bill_columns
+
+        """
         cols = cal_data.columns.tolist()
         cols = cols[-1:] + cols[:-1]
         cols.remove("RecordType")
@@ -1014,11 +1059,20 @@ class AWS_Access(object):
         cols.remove("user:Customer")
         #cols.remove("UsageStartDate")
         #cols.remove("UsageEndDate")
+        """
 
         cal_data = cal_data[cols]
 
-        print "write to csv......" + self.now()
-        cal_data.to_csv(cal_file, index=False,  sep='\t')
+        cal_name = self.config.cal_prefix + month + ".csv"
+
+        estimated_data = cal_data[cal_data["InvoiceID"]=="Estimated"]
+        if len(estimated_data.index) > 0:
+            cal_name = "estimated-" + month + ".csv"
+
+        cal_file = os.path.join(self.config.cal_dir, cal_name)
+
+        print "write to " + cal_name + " ......"+ self.now()
+        cal_data.to_csv(cal_file, index=False,  sep=';')
 
 
         return cal_file, cal_name
@@ -1033,6 +1087,9 @@ class AWS_Access(object):
 
         if len(month_list) > 0:
             for month in month_list:
+                print "\n\n"
+                print "calc [" + month + "] ......" + self.now()
+
                 try:
                     """
                     try download bill and tag files, then cal and upload
@@ -1088,14 +1145,14 @@ class AWS_Access(object):
                         file_obj = self.s3_resource.Bucket( \
                             self.config.proc_bucket).put_object(Key=s3key, Body=data )
 
-
-
                 except Exception as e:
                     """
                     process option error
                     """
                     #print ("open exception: %s: %s\n" % (e.args, e.message))
                     traceback.print_exc()
+
+                print "finish [" + month + "] ......" + self.now()
 
 
 
