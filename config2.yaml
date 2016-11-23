@@ -1,0 +1,133 @@
+# -*- coding: utf-8 -*-
+# configuration file for aws bill procssing version 2
+
+# bill logs
+bill_logs:
+  s3_bucket:
+    bucket_name: edusoft-aws-bill
+    log_prefix: 316674983838-aws-billing-detailed-line-items-with-resources-and-tags-ACTS-
+
+
+# bill processed
+bill_processed:
+  s3_bucket:
+    bucket_name: edusoft-aws-bill-work
+    raw_folder: raw/
+    raw_prefix: raw-
+    tag_folder: tags/
+    tag_prefix: cost_tags-
+    cal_folder: calc/
+    cal_prefix: calc-
+    stat_folder: stat/
+    stat_prefix: stat-
+
+# local directory
+directories:
+  tmp: tmp
+  data: data
+  raw: raw
+  tag: tags
+  cal: calc
+  stat: stat
+
+# bill tags
+bill_tags:
+  - tag: "user:Bill"
+  - tag: "user:billTag"
+  - tag: "user:Customer"
+  - tag: "user:Name"
+  - tag: "user:Division"
+  - tag: "user:Project"
+
+# lost tag
+lost_tag:
+  key: "user:Project"
+  value: "Shanghai Edu ZTJY"
+  group: "专题教育"
+  division: "中小学事业部"
+
+# costcenter tags file
+cost_tags:
+  tags_file: cost_tags.csv
+  start_month: 2014-12
+  join_key: "user:Project"
+
+bill_columns:
+  calc:
+    - "index"
+    - "InvoiceID"
+    - "PayerAccountId"
+    - "LinkedAccountId"
+    - "RecordId"
+    - "ProductName"
+    - "RateId"
+    - "SubscriptionId"
+    - "PricingPlanId"
+    - "UsageType"
+    - "Operation"
+    - "AvailabilityZone"
+    - "ReservedInstance"
+    - "ItemDescription"
+    - "UsageStartDate"
+    - "UsageEndDate"
+    - "UsageQuantity"
+    - "BlendedRate"
+    - "BlendedCost"
+    - "UnBlendedRate"
+    - "UnBlendedCost"
+    - "ResourceId"
+    - "user:Project"
+    - "ProjectGroup"
+    - "CostDivision"
+    - "InstanceType"
+    - "Platform"
+    - "AdjustedCost"
+    - "TotalCost"
+  raw:
+    - "InvoiceID"
+    - "PayerAccountId"
+    - "LinkedAccountId"
+    - "RecordType"
+    - "RecordId"
+    - "user:Project"
+    - "user:Name"
+    - "ProductName"
+    - "ItemDescription"
+    - "UsageType"
+    - "ResourceId"
+    - "Operation"
+    - "UsageQuantity"
+    - "AvailabilityZone"
+    - "ReservedInstance"
+    - "SubscriptionId"
+    - "PricingPlanId"
+    - "RateId"
+    - "BlendedRate"
+    - "BlendedCost"
+    - "UnBlendedRate"
+    - "UnBlendedCost"
+    - "UsageStartDate"
+    - "UsageEndDate"
+    #- "user:Bill"
+    #- "user:billTag"
+    #- "user:Division"
+    #- "user:Customer"
+
+
+# statistics file
+statistics:
+  merge_file: history_bill.csv
+
+# platform list of AWS
+platform:
+  - item: "Linux"
+  - item: "Windows"
+  - item: "MySQL"
+  - item: "PostgreSQL"
+  - item: "SQL Server"
+  - item: "Oracle"
+  - item: "Memcached"
+  - item: "Redis"
+  - item: "DynamoDB"
+  - item: "Redshift"
+  - item: "LoadBalancer"
