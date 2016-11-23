@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding:utf-8 -*-
 
 import sys
 import os
@@ -14,9 +14,9 @@ sys.setdefaultencoding('utf8')
 curdir = os.path.abspath(os.path.curdir)
 
 yaml_obj = yaml.load(open('item-bill.yaml'))
-data_dir = yaml_obj.get('data_dir')
+data_dir = 'data'
 data_dir = os.path.join(curdir, data_dir)
-tmp_dir = yaml_obj.get('tmp_dir')
+tmp_dir = 'tmp'
 tmp_dir = os.path.join(curdir, tmp_dir)
 
 bills = yaml_obj.get('s3prefix')
@@ -60,6 +60,7 @@ for obj_i in object_summary_iterator:
         obj = s3.Object(obj_i.bucket_name, obj_i.key)
         tmpfile = os.path.join(tmp_dir, obj.key)
         obj.download_file(tmpfile)
+
         zFile = zipfile.ZipFile(tmpfile,'r')
         for filename in zFile.namelist():
             print filename[len(bills_prefix):]

@@ -119,7 +119,6 @@ def getopts():
     return scope, profile, config, environment
 
 
-
 class AWS_Access(object):
     """
     class for aws access and bill calculations
@@ -135,6 +134,7 @@ class AWS_Access(object):
         self.s3_client = config.s3_client
         self.s3_resource = config.s3_resource
 
+
     def set_index(self,row):
         """
 
@@ -144,6 +144,7 @@ class AWS_Access(object):
         return str(row["RecordId"]) + "-" + str(row["SubscriptionId"]) + "-" +\
                 str(row["RateId"]) +"-" + str(row["LinkedAccountId"]) + "-" + \
                str(row["InvoiceID"])
+
 
     def set_index_of_records(self,data):
         """
@@ -165,8 +166,6 @@ class AWS_Access(object):
         data["index"] = data.apply(self.set_index, axis=1)
 
 
-
-    #
     def get_instance_type(self,row):
         """
 
@@ -295,6 +294,7 @@ class AWS_Access(object):
             else:
                 return None
 
+
     def get_platform(self, row):
         """
 
@@ -400,6 +400,7 @@ class AWS_Access(object):
                 return "VAT"
             else:
                 return None
+
 
     def set_platform_instance_type(self,data):
         """
@@ -589,7 +590,6 @@ class AWS_Access(object):
         data["UsageType"][index] = "Support"
 
 
-
     def tag_metric_monitor_usage(self, data):
         """
 
@@ -632,6 +632,7 @@ class AWS_Access(object):
                     project = project_data["user:Project"][project_data.first_valid_index()]
                     data["user:Project"][index] = project
 
+
     def set_dynamodb_project(self, row):
         """
 
@@ -644,12 +645,14 @@ class AWS_Access(object):
         else:
             return row["user:Project"]
 
+
     def default_adjust_cost(self, row):
         """
 
         :return:
         """
         return float(row["UnBlendedCost"])
+
 
     def adjust_ri_cost(self, data):
         """
@@ -824,6 +827,7 @@ class AWS_Access(object):
                                                         riusage), \
                                                   axis=1)
 
+
     def now(self):
         """
 
@@ -875,6 +879,7 @@ class AWS_Access(object):
         print "bill time " + str(end_datetime)
         print "this month [ "+ str(hours) + " ] hours left"
 
+
     def startstamp(self, row):
 
         try:
@@ -892,6 +897,7 @@ class AWS_Access(object):
             timeStamp = float(str(timeStamp) + str("%06d" % d.microsecond)) / 1000000
             #print timeStamp
             return timeStamp
+
 
     def endstamp(self, row):
 
@@ -911,14 +917,13 @@ class AWS_Access(object):
             # print timeStamp
             return timeStamp
 
+
     def trim_project_tag(self,data):
         """
 
         :param data:
         :return:
         """
-
-
 
 
     def cal_bill(self, month, bill_file, tag_file):
@@ -1045,7 +1050,7 @@ class AWS_Access(object):
         print "set index of records ......" + self.now()
         self.set_index_of_records(cal_data)
 
-        cols = self.config.bill_columns
+        cols = self.config.calc_columns
 
         """
         cols = cal_data.columns.tolist()
@@ -1084,7 +1089,6 @@ class AWS_Access(object):
         :param month_list:
         :return:
         """
-
         if len(month_list) > 0:
             for month in month_list:
                 print "\n\n"
@@ -1104,7 +1108,7 @@ class AWS_Access(object):
                         print "download " + bill_key + "......" +  self.now()
                         obj.download_file(bill_file)
 
-                    # download bill file
+                    # download tags file
                     tag_file = self.config.tag_prefix + month + ".csv"
                     tag_key = self.config.tag_folder + tag_file
 
@@ -1153,7 +1157,6 @@ class AWS_Access(object):
                     traceback.print_exc()
 
                 print "finish [" + month + "] ......" + self.now()
-
 
 
 def main():

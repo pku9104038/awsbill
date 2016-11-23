@@ -16,9 +16,9 @@ class CommandLine(object):
     def __init__(self):
         self.scope = "latest"
         self.profile = "default"
-        self.config = "config2.yaml"
+        self.config_yaml = "config2.yaml"
         self.environment = "s3"
-
+        self.script = ""
 
     def usage(self):
         """
@@ -86,6 +86,7 @@ class CommandLine(object):
             try to get commandline options
             """
             opts,args = getopt.getopt(sys.argv[1:],"hs:p:c:e:")
+            self.script = sys.argv[0]
             for op, value in opts:
                 if op == "-s":
                     self.scope = value
@@ -108,8 +109,10 @@ class CommandLine(object):
             sys.exit(1)
 
 
-        print "\n................"
+        print "\n................\n"
         print "python " + sys.argv[0] + " -s " + self.scope + \
-              " -p " + self.profile + " -c " + self.config + \
+              " -p " + self.profile + " -c " + self.config_yaml + \
               " -e " + self.environment
-        print "................\n"
+        print "\n................\n"
+
+        self.msg("I am running, one moment please......\n")

@@ -12,6 +12,8 @@ s3buckets:
 
 s3prefix:
  bill-prefix: 316674983838-aws-billing-detailed-line-items-with-resources-and-tags-ACTS-
+ raw-prefix: raw/
+ proc-prefix: proc/
  invoice-prefix: invoice/
  estimate-prefix: estimate/
  extract-prefix: extract/

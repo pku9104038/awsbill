@@ -27,32 +27,36 @@ class Config(object):
             return str(year) + "-" + str(month)
 
 
-
-    def get_months(self):
+    def get_months(self, start_yyyy_mm = "2014-12", end_yyyy_mm = "2016-11"):
         """
         get month list according to the scope option
         :return:
         """
 
         month_list = []
-        start_month = self.cost_start
-        now = time.localtime(time.time())
-        cur_year = now.tm_year
-        cur_mon = now.tm_mon
+        #start_month = self.cost_start
+        start_month = start_yyyy_mm
         sta_year = int(start_month[:4])
         sta_mon = int(start_month[5:])
-        year = cur_year
-        month = cur_year
+
+        # now = time.localtime(time.time())
+        # cur_year = now.tm_year
+        # cur_mon = now.tm_mon
+        #year = cur_year
+        #month = cur_year
+
+        end_month = end_yyyy_mm
+        year = int(end_yyyy_mm[:4])
+        month = int(end_yyyy_mm[5:])
 
         if self.scope == "all":
+            end_year = year
+            end_mon = month
             year = sta_year
             month = sta_mon
-            end_year = cur_year
-            end_mon = cur_mon
             while True:
 
                 month_list.append(self.yyyy_mm(year=year,month=month))
-
                 if year == end_year and month == end_mon:
                     break
                 else:
@@ -61,19 +65,14 @@ class Config(object):
                         year = year + 1
                     else:
                         month = month + 1
-        elif self.scope == "origin":
-            year = year
         elif self.scope == "last":
-            if cur_mon == 1:
+            if month == 1:
                 month = 12
-                year = cur_year - 1
+                year = year - 1
             else:
-                month = cur_mon - 1
-                year = cur_year
+                month = month - 1
             month_list.append(self.yyyy_mm(year=year,month=month))
         elif self.scope == "latest":
-            year = cur_year
-            month = cur_mon
             month_list.append(self.yyyy_mm(year=year,month=month))
         else:
             month_list.append(self.scope)
@@ -81,7 +80,8 @@ class Config(object):
         return  month_list
 
 
-    def __init__(self, scope, profile, config_yaml, operate=None, environment = "local"):
+    def __init__(self, scope = "latest", profile = "default", \
+                 config_yaml = "config2.yaml", environment = "local"):
         """
 
         :param scope:
@@ -92,7 +92,6 @@ class Config(object):
         # init scope
 
         self.scope = scope
-        self.operate = operate
 
         # load config_yaml
         self.config_file = config_yaml
@@ -154,8 +153,8 @@ class Config(object):
         self.cost_tags_join_key = self.yaml_obj.get("cost_tags")["join_key"]
 
         # bill columns
-        self.bill_columns = self.yaml_obj.get("bill_columns")
-        print self.bill_columns
+        self.raw_columns = self.yaml_obj.get("bill_columns")["raw"]
+        self.calc_columns = self.yaml_obj.get("bill_columns")["calc"]
 
         # aws seesion
         self.profile = profile
@@ -171,7 +170,10 @@ class Config(object):
         self.s3_resource = self.session.resource('s3')
 
         # scope month_list
-        self.month_list = self.get_months()
+        now = time.localtime(time.time())
+        yyyy_mm = str(now.tm_year)+"-"+str(now.tm_mon)
+        self.month_list = self.get_months(start_yyyy_mm=self.cost_start,\
+                                          end_yyyy_mm=yyyy_mm)
 
         # merged bill
         self.merge_file = self.yaml_obj.get("statistics")["merge_file"]
