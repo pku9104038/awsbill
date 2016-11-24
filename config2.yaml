@@ -109,11 +109,11 @@ bill_columns:
     - "ResourceId"
     - "user:Project"
   calc_read_csv_dtype:
-    UsageQuantity: "np.float64"
-    BlendedRate: "np.float64"
-    BlendedCost: "np.float64"
-    UnBlendedRate: "np.float64"
-    UnBlendedCost: "np.float64"
+    UsageQuantity: "float64"
+    BlendedRate: "float64"
+    BlendedCost: "float64"
+    UnBlendedRate: "float64"
+    UnBlendedCost: "float64"
 
 # statistics file
 statistics:

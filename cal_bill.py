@@ -8,14 +8,18 @@
 
 import config as cfg
 import bill_cli
+import bill_cli
 import sys
 import getopt
 import os
 import shutil
 import datetime
 import traceback
-import pandas, numpy
+import pandas
 import time
+import hashlib
+
+import csv
 
 # Define the usage helper and get options function
 
@@ -120,17 +124,18 @@ def getopts():
     return scope, profile, config, environment
 
 
-class AWS_Access(object):
+class AWS_Calc_Bill(object):
     """
     class for aws access and bill calculations
     """
 
-    def __init__(self, config):
+    def __init__(self, config, commandline):
         """
 
         :param config:
         """
         self.config = config
+        self.cli = commandline
         self.session = config.session
         self.s3_client = config.s3_client
         self.s3_resource = config.s3_resource
@@ -142,9 +147,11 @@ class AWS_Access(object):
         :param row:
         :return:
         """
-        return str(row["RecordId"]) + "-" + str(row["SubscriptionId"]) + "-" +\
+        index =  str(row["RecordId"]) + "-" + str(row["SubscriptionId"]) + "-" +\
                 str(row["RateId"]) +"-" + str(row["LinkedAccountId"]) + "-" + \
                str(row["InvoiceID"])
+
+        return hashlib.sha512(index).hexdigest()
 
 
     def set_index_of_records(self,data):
@@ -165,242 +172,6 @@ class AWS_Access(object):
             data["SubscriptionId"][i] = data["RateId"][i]  # use rate id as record id
 
         data["index"] = data.apply(self.set_index, axis=1)
-
-
-    def get_instance_type(self,row):
-        """
-
-        :param row:
-        :return:
-        """
-
-        product = str(row["ProductName"])
-        usage_type = str(row["UsageType"])
-        desc = str(row["ItemDescription"])
-
-        # DynamoDB
-        if product == "Amazon DynamoDB":
-            if usage_type.find("write") > -1 or usage_type.find("Write") > -1:
-                return "WriteCapacity"
-            elif usage_type.find("read") > -1 or usage_type.find("Read") > -1:
-                return "ReadCapacity"
-            elif usage_type.find("TimedStorage") > -1 :
-                return "TimedStorage"
-            else:
-                return None
-
-
-        # ElastiCache
-        elif product == "Amazon ElastiCache":
-            colon = usage_type.find(":")
-            if colon > -1:
-                return usage_type[colon + len(":"):]
-            else:
-                return None
-
-        # RedShift
-        elif product == "Amazon Redshift":
-            colon = usage_type.find(":")
-            if colon > -1:
-                return usage_type[colon + len(":"):]
-            else:
-                return None
-
-        # S3
-        elif product == "Amazon Simple Storage Service":
-            if usage_type.find("DataTransfer") > -1:
-                return "DataTransfer"
-            elif usage_type.find("EarlyDelete") > -1:
-                return "EarlyDelete"
-            elif usage_type.find("Requests") > -1:
-                return "Requests"
-            elif usage_type.find("TimedStorage") > -1:
-                return "TimedStorage"
-            else:
-                return None
-
-        # SQS
-        elif product == "Amazon Simple Queue Service":
-            if usage_type.find("Requests") > -1:
-                return "Requests"
-            else:
-                return None
-
-
-        # SNS
-        elif product == "Amazon Simple Notification Service":
-            if usage_type.find("DataTransfer") > -1:
-                return "DataTransfer"
-            elif usage_type.find("DeliveryAttempts") > -1:
-                return "DeliveryAttempts"
-            elif usage_type.find("Requests") > -1:
-                return "Requests"
-            else:
-                return None
-
-        # CloudWatch
-        elif product == "AmazonCloudWatch":
-            if usage_type.find("DataProcessing") > -1:
-                return "DataProcessing"
-            return None
-
-        # CloudTrial
-        elif product == "AWS CloudTrail":
-            if usage_type.find("EventsRecorded") > -1:
-                return "EventsRecorded"
-            return None
-
-        # RDS
-        elif product == "Amazon RDS Service":
-            colon = usage_type.find(":")
-            if colon > -1:
-                return usage_type[colon + len(":"):]
-            else:
-                if usage_type.find("DataTransfer") > -1:
-                    return "DataTransfer"
-                elif usage_type.find("CloudFront") > -1:
-                    return "CloudFront"
-                return None
-
-
-        # EC2
-        elif product == "Amazon Elastic Compute Cloud":
-            colon = usage_type.find(":")
-            if colon > -1:
-                return usage_type[colon + len(":"):]
-            else:
-                if usage_type.find("LoadBalancer") > -1:
-                    return "LoadBalancer"
-                elif usage_type.find("DataTransfer") > -1:
-                    return "DataTransfer"
-                elif usage_type.find("DataProcessing") > -1:
-                    return "DataProcessing"
-                elif usage_type.find("CloudFront") > -1:
-                    return "CloudFront"
-                return None
-
-        # Support
-        elif product.find("AWS Support") > -1:
-            if product.find("Developer") > -1:
-                return "Developer"
-            elif product.find("Business") > -1:
-                return "Business"
-            return None
-
-
-                # NULL: VAT
-        else:
-            if desc.find("VAT") > -1:
-                return "VAT"
-            else:
-                return None
-
-
-    def get_platform(self, row):
-        """
-
-        :param row:
-        :return:
-        """
-
-        product = str(row["ProductName"])
-        desc = str(row["ItemDescription"])
-        usage_type = str(row["UsageType"])
-
-        # DynamoDB
-        if product == "Amazon DynamoDB":
-                return "DynamoDB"
-
-
-        # ElastiCache
-        elif product == "Amazon ElastiCache":
-            if desc.find("Memcached") > -1:
-                return "Memcached"
-            elif desc.find("Redis") > -1:
-                return "Redis"
-            else:
-                return "ElastiCache"
-
-        # RedShift
-        elif product == "Amazon Redshift":
-            return "Redshift"
-
-        # S3
-        elif product == "Amazon Simple Storage Service":
-            if desc.find("Glacier") > -1:
-                return "Glacier"
-            else:
-                return "S3"
-
-        # SQS
-        elif product == "Amazon Simple Queue Service":
-            return "SQS"
-
-        # SNS
-        elif product == "Amazon Simple Notification Service":
-            return "SNS"
-
-
-        # CloudWatch
-        elif product == "AmazonCloudWatch":
-            return "CloudWatch"
-
-        # CloudTrial
-        elif product == "AWS CloudTrail":
-            return "CloudTrail"
-
-        # RDS
-        elif product == "Amazon RDS Service":
-            if desc.find("MySQL") > -1:
-                return "MySQL"
-            elif desc.find("SQL Server") > -1:
-                return "SQL Server"
-            elif desc.find("PostgreSQL") > -1:
-                return "PostgreSQL"
-            elif desc.find("Oracle") > -1:
-                return "Oracle"
-            elif desc.find("Oracle") > -1:
-                return "Oracle"
-            else:
-                return "RDS"
-
-
-        # EC2
-        elif product == "Amazon Elastic Compute Cloud":
-            if desc.find("Linux") > -1:
-                return "Linux"
-            elif desc.find("Windows") > -1:
-                return "Windows"
-            elif desc.find("LoadBalancer") > -1:
-                return "ELB"
-            elif desc.find("Elastic IP") > -1:
-                return "EIP"
-            elif desc.find("Elastic IP") > -1:
-                return "EIP"
-            elif desc.find("CloudFront") > -1:
-                return "CloudFront"
-            else:
-                if usage_type.find("EBSOptimized") > -1:
-                    return "EBSOptimized"
-                elif usage_type.find("EBS") > -1:
-                    return "EBS"
-                elif usage_type.find("CW") > -1:
-                    return "CloudWatch"
-                return "EC2"
-
-        # Support
-        elif product.find("AWS Support") > -1:
-            return "Support"
-
-
-
-
-            # NULL: VAT
-        else:
-            if desc.find("VAT") > -1:
-                return "VAT"
-            else:
-                return None
 
 
     def set_platform_instance_type(self,data):
@@ -613,27 +384,6 @@ class AWS_Access(object):
                         index = group.index
                         data["user:Project"][index] = project
 
-
-    def tag_by_resourceid_group(self,data):
-        """
-
-        :param data:
-        :return:
-        """
-
-        grouped = data.groupby("ResourceId")
-
-        for name, group in grouped:
-            resourceid = name[0]
-            bull_data = group[(group["user:Project"].isnull())]
-            index = bull_data.index
-            if len(index) > 0:
-                project_data = group[~(group["user:Project"].isnull())]
-                if len(project_data.index) > 0:
-                    project = project_data["user:Project"][project_data.first_valid_index()]
-                    data["user:Project"][index] = project
-
-
     def set_dynamodb_project(self, row):
         """
 
@@ -768,75 +518,6 @@ class AWS_Access(object):
                             data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
 
 
-    def ri_analysis(self, data):
-        """
-
-        :param data:
-        :return:
-        """
-
-        # RDS
-        product = "Amazon RDS Service"
-
-        # get rds data
-        adjust_data = data[data["ProductName"] == product]
-
-        # groupby InstanceType, Platform
-        grouped = adjust_data.groupby(["InstanceType", "Platform"])
-
-        for name, group in grouped:
-
-            # check ri purchase order
-            ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
-            usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
-            ri_usage = usage[usage["ReservedInstance"] == "Y"]
-
-            # if ri purchaseed
-            if len(ripo.index) > 0:
-                # total cost
-                cost = group["UnBlendedCost"].sum()
-                ri_cost = ripo["UnBlendedCost"].sum()
-                usage_cost = usage["UnBlendedCost"].sum()
-
-                # usage hours
-                hours = usage["UsageQuantity"].sum()
-                # ri hours
-                ri_hours = ripo["UsageQuantity"].sum()
-                # ri hours
-                ri_usage_hours = ri_usage["UsageQuantity"].sum()
-
-                # average cost
-                riusage = False
-                rate = 0
-                null_rate = 1
-                if hours > 0:
-                    riusage = True
-                    if ri_hours <= hours:
-                        rate = cost / hours
-                        null_rate = 0
-                    else:
-                        rate = ri_cost * ri_usage_hours / ri_hours / hours \
-                               + usage_cost / hours
-                        null_rate = (ri_hours - ri_usage_hours) / ri_hours
-
-                data["AdjustedCost"] = data.apply(self.set_rds_adjust_cost, \
-                                                  args=(product, \
-                                                        name[0], \
-                                                        name[1], \
-                                                        rate, \
-                                                        null_rate, \
-                                                        riusage), \
-                                                  axis=1)
-
-
-    def now(self):
-        """
-
-        :return:
-        """
-
-        return datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-
 
     def get_bill_date(self,data):
         """
@@ -919,237 +600,178 @@ class AWS_Access(object):
             return timeStamp
 
 
-    def trim_project_tag(self,data):
+    def read_month_trac_bill(self, month):
         """
 
+        :param month:
+        :return:
+        """
+
+        # download  file
+        file = self.config.trac_prefix + month + ".csv"
+        key = self.config.trac_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        filepath = os.path.join(self.config.trac_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(filepath)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + filepath)
+        data = pandas.read_csv(filepath, \
+                               dtype=self.config.calc_read_csv_dtype, \
+                               low_memory=False)
+
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + filepath)
+            os.remove(filepath)
+
+        return data
+
+    def read_month_cost_tags(self, month):
+        """
+
+        :param month:
+        :return:
+        """
+
+        # download  file
+        file = self.config.tag_prefix + month + ".csv"
+        key = self.config.tag_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        filepath = os.path.join(self.config.tag_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(filepath)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + filepath)
+        data = pandas.read_csv(filepath, \
+                               dtype=object, \
+                               low_memory=False)
+
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + filepath)
+            os.remove(filepath)
+
+        return data
+
+    def save_month_calc_data(self, month, data):
+        """
+
+        :param month:
         :param data:
         :return:
         """
 
+        name = self.config.cal_prefix + month + ".csv"
+        estimated_data = data[data["InvoiceID"] == "Estimated"]
+        if len(estimated_data.index) > 0:
+            name = "estimated-" + month + ".csv"
 
-    def cal_bill(self, month, bill_file, tag_file):
+        file = os.path.join(self.config.cal_dir, name)
+        self.cli.msg("Save as: " + file)
+        data.to_csv(file, index=False, quoting=csv.QUOTE_ALL)
+
+        s3key = self.config.cal_folder + name
+        if self.config.environment == "s3":
+            self.cli.msg("Upload: " + s3key)
+            data = open(file, 'rb')
+            file_obj = self.s3_resource.Bucket( \
+                self.config.proc_bucket).put_object(Key=s3key, Body=data)
+
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + file)
+            os.remove(file)
+
+        self.get_bill_date(data)
+
+    def cal_bill(self, data, tags_data):
         """
 
-        :param bill_file:
-        :param tag_file:
-        :return: cal_file, cal_name
+        :param data:
+        :param tag_data:
+        :return:
         """
 
-        # read bill csv file into pandas dataframe
-        print "read bill raw csv: " + month +"......" + self.now()
-
-        bill_data = pandas.read_csv(bill_file, dtype=self.config.calc_read_csv_dtype, low_memory=False)
-
-
-        # tag metric_monitor_usage according to the instance_id
-        print "tag ec2 metric monitor ......" + self.now()
-        pad = True
-        #bill_data["user:Project"] = bill_data.apply(self.tag_metric_monitor_usage, \
-        #                                            args = (bill_data, True), axis=1)
-        self.tag_metric_monitor_usage(data = bill_data)
+        self.tag_metric_monitor_usage(data = data)
 
         # set dynamodb lost tag to ztjy only
-        print "tag dynamodb ......"+ self.now()
-        #bill_data["user:Project"] = bill_data.apply(self.set_dynamodb_project, axis=1)
-        dynamo = bill_data[bill_data["ProductName"]=="Amazon DynamoDB"]
+        self.cli.msg("Tag DynamoDB......" )
+        dynamo = data[data["ProductName"]=="Amazon DynamoDB"]
         idx = dynamo.index
-        bill_data["user:Project"][idx] = self.config.lost_tag["value"]
+        data["user:Project"][idx] = self.config.lost_tag["value"]
 
-        # fill null project if this resourceid have been taged this month
-        print "tag by resourceid ......" + self.now()
-        self.tag_by_resourceid_group(bill_data)
-
-        # read bill csv file into pandas dataframe
-        print "read tag csv ..."+ self.now()
-        tag_data = pandas.read_csv(tag_file, low_memory=False)
 
         # left join merge bill and tags
-        print "merge bill ......"+ self.now()
-        #bill_data.apply(self.trim_project_tag,bill_data)
-        cal_data = pandas.merge(left=bill_data,right=tag_data, how="left", \
+        self.cli.msg("Merge cost_tags......")
+        calc_data = pandas.merge(left=data,right=tags_data, how="left", \
                                 on=self.config.cost_tags_join_key)
 
-        """
-        # test code to find some merge error
-        # and found that it was caused by tag with white space
-
-        cal_data = bill_data
-        cal_data.loc[:,"ProjectGroup"] = None
-        cal_data.loc[:, "CostDivision"] = None
-        """
-        """
-        grouped = tag_data.groupby("user:Project")
-
-        for name, group in grouped:
-            tag = name
-            index = (bill_data[bill_data["user:Project"]==tag]).index
-            print (tag, len(index) )
-            if len(index) > 0:
-                cal_data["ProjectGroup"][index] = group["ProjectGroup"][group.first_valid_index()]
-                cal_data["CostDivision"][index] = group["CostDivision"][group.first_valid_index()]
-        """
-        """
-        grouped = cal_data.groupby("user:Project")
-
-        for name, group in grouped:
-            tag = name
-            index = (bill_data[bill_data["user:Project"] == tag]).index
-            print (tag, len(index))
-            if len(index) > 0:
-                cal_data["ProjectGroup"][index] = tag_data["ProjectGroup"][tag_data.first_valid_index()]
-                cal_data["CostDivision"][index] = tag_data["CostDivision"][tag_data.first_valid_index()]
-
-        """
-
-
-                # add InstanceType column
-        #print "add InstanceType...."+ self.now()
-        #cal_data["InstanceType"] = cal_data.apply(self.get_instance_type, axis=1)
-
-        # add Platform column
-        #print "add Platform......"+ self.now()
-        #cal_data["Platform"] = cal_data.apply(self.get_platform, axis=1)
-
-
-        print "add Platform and InstanceType......" + self.now()
-        self.set_platform_instance_type(cal_data)
+        self.cli.msg("Add [Platform] [InstanceType]......")
+        self.set_platform_instance_type(calc_data)
 
 
         # add null AdjustedCost column
-        print "add AdjustedCost......"+ self.now()
-        cal_data["AdjustedCost"] = cal_data.apply(self.default_adjust_cost, axis=1)
+        self.cli.msg("Add default [AdjustedCost]......")
+        calc_data["AdjustedCost"] = calc_data.apply(self.default_adjust_cost, axis=1)
 
         # adjust rds ri cost
-        print "adjust ri cost......"+ self.now()
-        self.adjust_ri_cost(data = cal_data)
+        self.cli.msg("Adjust ReservedInstance Cost......")
+        self.adjust_ri_cost(data = calc_data)
 
-
-        print "calc TotalCost......"+ self.now()
-        df_null = cal_data[(cal_data['user:Project'].isnull())]
-        #df_totalcost = cal_data['AdjustedCost'].sum()
-        #df_totalcost = pandas.to_numeric(df_totalcost)
-        #df_nullcost = df_null['AdjustedCost'].sum()
-        #df_nullcost = pandas.to_numeric(df_nullcost)
-        sum_total = cal_data["AdjustedCost"].sum()
+        self.cli.msg("Calc TotalCost......")
+        df_null = calc_data[(calc_data['user:Project'].isnull())]
+        sum_total = calc_data["AdjustedCost"].sum()
         sum_null = df_null["AdjustedCost"].sum()
         if sum_null == 0:
             null_rate = 1
         else:
             null_rate = sum_total / (sum_total - sum_null)
 
-        self.get_bill_date(cal_data)
-
-        cal_data.loc[:, 'NullRate'] = null_rate
-        cal_data["TotalCost"] = cal_data.AdjustedCost * cal_data.NullRate
-        null_data = cal_data[(cal_data["user:Project"]).isnull()]
+        calc_data.loc[:, 'NullRate'] = null_rate
+        calc_data["TotalCost"] = calc_data.AdjustedCost * calc_data.NullRate
+        null_data = calc_data[(calc_data["user:Project"]).isnull()]
         index = null_data.index
-        cal_data["TotalCost"][index] = 0
+        calc_data["TotalCost"][index] = 0
 
-
-        #cal_data["StartStamp"] = cal_data.apply(self.startstamp,axis=1)
-        #cal_data["EndStamp"] = cal_data.apply(self.endstamp ,axis=1)
-
-        print "set index of records ......" + self.now()
-        self.set_index_of_records(cal_data)
+        self.cli.msg("Set Primary Index......")
+        self.set_index_of_records(calc_data)
 
         cols = self.config.calc_columns
+        calc_data = calc_data[cols]
 
-        """
-        cols = cal_data.columns.tolist()
-        cols = cols[-1:] + cols[:-1]
-        cols.remove("RecordType")
-        cols.remove("NullRate")
-        cols.remove("user:Bill")
-        cols.remove("user:billTag")
-        cols.remove("user:Division")
-        cols.remove("user:Name")
-        cols.remove("user:Customer")
-        #cols.remove("UsageStartDate")
-        #cols.remove("UsageEndDate")
-        """
+        return calc_data
 
-        cal_data = cal_data[cols]
-
-        cal_name = self.config.cal_prefix + month + ".csv"
-
-        estimated_data = cal_data[cal_data["InvoiceID"]=="Estimated"]
-        if len(estimated_data.index) > 0:
-            cal_name = "estimated-" + month + ".csv"
-
-        cal_file = os.path.join(self.config.cal_dir, cal_name)
-
-        print "write to " + cal_name + " ......"+ self.now()
-        cal_data.to_csv(cal_file, index=False,  sep=';')
-
-
-        return cal_file, cal_name
-
-
-    def cal_bills(self, month_list = []):
+    def cal_bills(self):
         """
 
         :param month_list:
         :return:
         """
+
+        month_list = self.config.month_list
+        print month_list
         if len(month_list) > 0:
             for month in month_list:
-                print "\n\n"
-                print "calc [" + month + "] ......" + self.now()
+
+                print "\n"
+                self.cli.msg("Start: " + month)
 
                 try:
                     """
                     try download bill and tag files, then cal and upload
                     """
-                    # download bill file
-                    bill_file = self.config.raw_prefix + month + ".csv"
-                    bill_key = self.config.raw_folder + bill_file
 
-                    obj = self.s3_resource.Object(self.config.proc_bucket, bill_key)
-                    bill_file = os.path.join(self.config.raw_dir, bill_file)
-                    if self.config.environment == "s3":
-                        print "download " + bill_key + "......" +  self.now()
-                        obj.download_file(bill_file)
-
-                    # download tags file
-                    tag_file = self.config.tag_prefix + month + ".csv"
-                    tag_key = self.config.tag_folder + tag_file
-
-                    obj = self.s3_resource.Object(self.config.proc_bucket, tag_key)
-                    tag_file = os.path.join(self.config.tag_dir, tag_file)
-                    if self.config.environment == "s3":
-                        print "download " + tag_key
-                        obj.download_file(tag_file)
+                    data = self.read_month_trac_bill(month=month)
+                    tags_data = self.read_month_cost_tags(month=month)
 
                     # cal bill of this month
-                    print "cal " + month + "......" + self.now()
-                    cal_file, cal_name = self.cal_bill( month=month, \
-                                                        bill_file=bill_file, \
-                                                        tag_file = tag_file)
+                    calc_data = self.cal_bill(data= data, tags_data=tags_data)
 
-                    # copy bills for data analysis
-                    if self.config.scope == "latest":
-                        print "copy latest_month.csv......" +  self.now()
-                        shutil.copy2(src= cal_file, \
-                                     dst= os.path.join(self.config.cal_dir,"latest_month.csv"))
-
-                    elif self.config.scope == "last":
-                        print "copy last_month.csv......" + self.now()
-                        shutil.copy2(src=cal_file, \
-                                     dst=os.path.join(self.config.cal_dir, "last_month.csv"))
-
-                    elif self.config.scope != "all":
-                        print "copy this_month.csv......" + self.now()
-                        shutil.copy2(src=cal_file, \
-                                     dst=os.path.join(self.config.cal_dir, "this_month.csv"))
-
-
-                    if self.config.environment == "s3":
-                        print "upload " + cal_name + "......" + self.now()
-                        # upload cal bill to s3 processed bucket
-                        data = open(cal_file, 'rb')
-                        s3key = self.config.cal_folder + cal_name
-                        file_obj = self.s3_resource.Bucket( \
-                            self.config.proc_bucket).put_object(Key=s3key, Body=data )
+                    self.save_month_calc_data(month=month, data=calc_data)
 
                 except Exception as e:
                     """
@@ -1158,7 +780,7 @@ class AWS_Access(object):
                     #print ("open exception: %s: %s\n" % (e.args, e.message))
                     traceback.print_exc()
 
-                print "finish [" + month + "] ......" + self.now()
+                self.cli.msg("Finish: " + month)
 
 
 def main():
@@ -1173,18 +795,16 @@ def main():
     cli.get_options()
 
     # init Config instance
-    config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, profile=cli.profile, \
-                        environment= cli.environment, end_month = cli.end_month)
+    config = cfg.Config(cli.option)
 
 
     # init AWS_Access instance
-    aws = AWS_Access(config=config)
-    print aws.now()
-    print config.month_list
+    aws_calc_bill = AWS_Calc_Bill(config=config, commandline=cli)
 
-    aws.cal_bills(month_list=config.month_list)
+    aws_calc_bill.cal_bills()
 
-    print aws.now()
+    print "\n"
+    aws_calc_bill.cli.msg("You got it !  Cheers! \n")
 
 
 if __name__ == '__main__':

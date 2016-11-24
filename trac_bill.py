@@ -60,7 +60,10 @@ class AWS_Trace_Bill(object):
         # read bill csv file into pandas dataframe
         self.cli.msg("Read: " + bill_file)
         bill_data = pandas.read_csv(bill_file, dtype = object, low_memory=False)
-        #dtype={"InvoiceID": object}
+
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + file)
+            os.remove(bill_file)
 
         return bill_data
 
@@ -77,14 +80,19 @@ class AWS_Trace_Bill(object):
 
         obj = self.s3_resource.Object(self.config.proc_bucket, key)
         file = os.path.join(self.config.trac_dir, file)
-        if self.config.environment == "s3":
-            self.cli.msg("Download: " + key)
-            obj.download_file(file)
-
-        # read bill csv file into pandas dataframe
-        self.cli.msg("Read: " + file)
         try:
+            if self.config.environment == "s3":
+                self.cli.msg("Download: " + key)
+                obj.download_file(file)
+
+            # read bill csv file into pandas dataframe
+            self.cli.msg("Read: " + file)
+
             data = pandas.read_csv(file, dtype=object, low_memory=False)
+            if self.config.remove == "yes":
+                self.cli.msg("Remove: " + file)
+                os.remove(file)
+
             return False, data
         except Exception as e:
             """
@@ -114,6 +122,9 @@ class AWS_Trace_Bill(object):
             file_obj = self.s3_resource.Bucket( \
                 self.config.proc_bucket).put_object(Key=s3key, Body=data)
 
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + file)
+            os.remove(file)
 
     def tag_by_resourceid(self, data = None, follow_up_data = None, first_month = True):
         """
@@ -150,13 +161,16 @@ class AWS_Trace_Bill(object):
                         project = project_data["user:Project"][project_data["user:Project"].first_valid_index()]
                         data["user:Project"][index] = project
 
-    def trace_bills(self, month_list = []):
+    def trace_bills(self):
         """
 
         :param month_list:
         :return:
         """
+
+        month_list = self.config.month_list
         print month_list
+
         length = len(month_list)
         if length > 0:
             first_month = True
@@ -195,14 +209,12 @@ def main():
     cli.get_options()
 
     # init config
-    config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment= cli.environment, \
-                        end_month = cli.end_month)
+    config = cfg.Config(cli.option)
 
     # init AWS_Access instance
     aws_trace_bill = AWS_Trace_Bill(config=config, commandline = cli)
 
-    aws_trace_bill.trace_bills(month_list=aws_trace_bill.config.month_list)
+    aws_trace_bill.trace_bills()
 
     print "\n"
     aws_trace_bill.cli.msg("You got it !  Cheers! \n")

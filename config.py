@@ -7,6 +7,7 @@ import yaml
 import os
 import boto3
 import time
+import bill_cli
 
 class Config(object):
     """
@@ -87,9 +88,7 @@ class Config(object):
         return  month_list
 
 
-    def __init__(self, scope = "latest", profile = "default", \
-                 end_month = "latest", \
-                 config_yaml = "config2.yaml", environment = "local"):
+    def __init__(self, opt):
         """
 
         :param scope:
@@ -97,18 +96,17 @@ class Config(object):
         :param config_yaml:
         :param operate:
         """
-        # init scope
 
-        self.scope = scope
 
-        # load config_yaml
-        self.config_file = config_yaml
-        self.yaml_obj = yaml.load(open(config_yaml))
+        self.scope = opt.scope
+        self.config_file = opt.config_yaml
+        self.environment = opt.environment
+        self.end_month = opt.end_month
+        self.profile = opt.profile
+        self.remove = opt.remove
 
-        # running environment
-        self.environment = environment
-        self.end_month = end_month
 
+        self.yaml_obj = yaml.load(open(self.config_file))
 
         # get bill_logs
         bill_logs = self.yaml_obj.get("bill_logs")
@@ -175,11 +173,9 @@ class Config(object):
         self.calc_columns = self.yaml_obj.get("bill_columns")["calc"]
         self.calc_read_csv_dtype =self.yaml_obj.get("bill_columns")["calc_read_csv_dtype"]
 
-        # aws seesion
-        self.profile = profile
 
         # init aws_session
-        self.session = boto3.Session(profile_name=profile)
+        self.session = boto3.Session(profile_name=self.profile)
 
         # Any clients created from this session will use credentials
         # from the [profile] section of ~/.aws/credentials.

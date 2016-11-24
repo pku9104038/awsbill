@@ -8,19 +8,38 @@ import getopt
 import sys, time
 import datetime
 
+
+class Options(object):
+    """
+
+    """
+    def __init__(self):
+        self.scope = "latest"
+        self.profile = "default"
+        self.config_yaml = "config2.yaml"
+        self.environment = "s3"
+        self.end_month = ""
+        self.remove = "no"
+
+
 class CommandLine(object):
     """
     class for command line operation and stdout
     """
 
     def __init__(self):
+        self.option = Options()
+        self.script = ""
+
+        """
         self.scope = "latest"
         self.profile = "default"
         self.config_yaml = "config2.yaml"
         self.environment = "s3"
-        self.script = ""
+
         now = time.localtime(time.time())
         self.end_month = ""
+        """
 
     def usage(self):
         """
@@ -29,7 +48,8 @@ class CommandLine(object):
         """
         print "please usage:"
         print "python " + sys.argv[0] + "[-p profile] [-c config_yaml] " + \
-              "[-l data_location] " + " [-m month] + [-e end_month] "
+              "[-l data_location] " + " [-m month] + [-e end_month] " + \
+              "[-r y/n] "
 
 
         # for option -p
@@ -52,6 +72,14 @@ class CommandLine(object):
         print "         local: running local files only "
         print "         s3: download/upload from/to s3"
         print "         default: s3"
+        print ""
+
+        # for option -r
+        print ""
+        print "    -r: remove local file"
+        print "         yes: remove"
+        print "         no: keep"
+        print "         default: no"
         print ""
 
         # for option -m
@@ -97,26 +125,28 @@ class CommandLine(object):
             """
             try to get commandline options
             """
-            opts,args = getopt.getopt(sys.argv[1:],"hm:e:p:c:l:")
+            opts,args = getopt.getopt(sys.argv[1:],"hm:e:p:c:l:r:")
             self.script = sys.argv[0]
             for op, value in opts:
                 if op == "-m":
-                    self.scope = value
+                    self.option.scope = value
                 if op == "-e":
-                    self.end_month = value
+                    self.option.end_month = value
                 elif op == "-p":
-                    self.profile = value
+                    self.option.profile = value
                 elif op == "-c":
-                    self.config = value
+                    self.option.config = value
                 elif op == "-l":
-                    self.environment = value
+                    self.option.environment = value
+                elif op == "-r":
+                    self.option.remove = value
                 elif op == "-h":
                     self.usage()
                     sys.exit(0)
 
-            if self.scope == "all" or self.scope == "latest" or \
-                            self.scope == "last" or self.end_month == "":
-                self.end_month = self.scope
+            if self.option.scope == "all" or self.option.scope == "latest" or \
+                            self.option.scope == "last" or self.option.end_month == "":
+                self.option.end_month = self.option.scope
 
 
 
@@ -130,9 +160,10 @@ class CommandLine(object):
 
 
         print "\n................\n"
-        print "python " + sys.argv[0] + " -p " + self.profile + \
-              " -c " + self.config_yaml + " -l " + self.environment +\
-              " -m " + self.scope + " -e " +self.end_month
+        print "python " + sys.argv[0] + " -p " + self.option.profile + \
+              " -c " + self.option.config_yaml + " -l " + self.option.environment +\
+              " -m " + self.option.scope + " -e " + self.option.end_month +\
+              " -r " + self.option.remove
         print "\n................\n"
 
         self.msg("I am running, one moment please......\n")

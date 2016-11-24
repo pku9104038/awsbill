@@ -47,6 +47,8 @@ class AWS_Raw_Bill(object):
         :return:
         """
 
+        print self.config.month_list
+
         for month in self.config.month_list:
             print "\n"
             self.cli.msg("Start: " + month)
@@ -73,7 +75,9 @@ class AWS_Raw_Bill(object):
                 # read unziped log csv file into pandas dataframe
                 data = pandas.read_csv(file.name, dtype = object, low_memory=False)
                 # remove tmp csv
-                #os.remove(filepath)
+                if self.config.remove == "yes":
+                    self.cli.msg("Remove: " + filepath)
+                    os.remove(filepath)
 
                 # remove records not 'LineItem'
                 data = data[(data['RecordType'] == 'LineItem')]
@@ -110,12 +114,16 @@ class AWS_Raw_Bill(object):
                         put_object(Key=s3key, Body=data)
 
                 # remove local csv
-                #os.remove(csvpath)
+                if self.config.remove == "yes":
+                    self.cli.msg("Remove: " + csvpath)
+                    os.remove(csvpath)
 
             self.cli.msg("Finish: " + month)
 
             # remove local zip_file
-            #os.remove(zip_file)
+            if self.config.remove == "yes":
+                self.cli.msg("Remove: " + zip_file)
+                os.remove(zip_file)
 
 
 def main():
@@ -128,9 +136,7 @@ def main():
     cli.get_options()
 
     # init config
-    config = cfg.Config(scope=cli.scope, config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment=cli.environment, \
-                        end_month=cli.end_month)
+    config = cfg.Config(cli.option)
 
 
     # init AWS_Access instance

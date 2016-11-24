@@ -29,12 +29,15 @@ class AWS_Bill_Tag(object):
         self.cli = commandline
 
 
-    def tags_bills(self, month_list=[]):
+    def tags_bills(self):
         """
 
         :param month_list:
         :return:
         """
+
+        print self.config.month_list
+        month_list = self.config.month_list
         if len(month_list) > 0:
             # read cost tags file into pandas dataframe
             tag_file = os.path.join(self.config.tag_dir,
@@ -108,14 +111,12 @@ def main():
     cli.get_options()
 
     # init config
-    config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment= cli.environment, \
-                        end_month=cli.end_month)
+    config = cfg.Config(cli.option)
 
     # init AWS_Access instance
     aws_bill_tag = AWS_Bill_Tag(config=config, commandline = cli)
 
-    aws_bill_tag.tags_bills(aws_bill_tag.config.month_list)
+    aws_bill_tag.tags_bills()
 
     print "\n"
     aws_bill_tag.cli.msg("You got it !  Cheers! \n")
