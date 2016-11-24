@@ -27,45 +27,23 @@ class Config(object):
             return str(year) + "-" + str(month)
 
 
-    def get_months(self, start_yyyy_mm = "2014-12", end_yyyy_mm = "2016-11"):
+    def get_months(self):
         """
         get month list according to the scope option
         :return:
         """
 
         month_list = []
-        #start_month = self.cost_start
-        start_month = start_yyyy_mm
-        sta_year = int(start_month[:4])
-        sta_mon = int(start_month[5:])
 
-        # now = time.localtime(time.time())
-        # cur_year = now.tm_year
-        # cur_mon = now.tm_mon
-        #year = cur_year
-        #month = cur_year
+        start_month = self.cost_start
+        end_month = self.end_month
 
-        end_month = end_yyyy_mm
-        year = int(end_yyyy_mm[:4])
-        month = int(end_yyyy_mm[5:])
+        now = time.localtime(time.time())
+        year = now.tm_year
+        month = now.tm_mon
 
-        if self.scope == "all":
-            end_year = year
-            end_mon = month
-            year = sta_year
-            month = sta_mon
-            while True:
 
-                month_list.append(self.yyyy_mm(year=year,month=month))
-                if year == end_year and month == end_mon:
-                    break
-                else:
-                    if month == 12:
-                        month = 1
-                        year = year + 1
-                    else:
-                        month = month + 1
-        elif self.scope == "last":
+        if self.scope == "last":
             if month == 1:
                 month = 12
                 year = year - 1
@@ -75,12 +53,42 @@ class Config(object):
         elif self.scope == "latest":
             month_list.append(self.yyyy_mm(year=year,month=month))
         else:
-            month_list.append(self.scope)
+            if self.scope == "all":
+                end_month = self.yyyy_mm(year,month)
+            else:
+                start_month = self.scope
+            print (start_month, end_month)
+
+
+            sta_year = int(start_month[:4])
+            sta_mon = int(start_month[5:])
+
+            end_year = int(end_month[:4])
+            end_mon = int(end_month[5:])
+
+            if ( end_mon <= 12 and sta_year >= 2006 and sta_mon <= 12) and \
+                    ( (end_year > sta_year) or \
+                        (end_year == sta_year and end_mon >= sta_mon) ):
+
+                year = sta_year
+                month = sta_mon
+
+                while True:
+                        month_list.append(self.yyyy_mm(year=year, month=month))
+                        if year == end_year and month == end_mon:
+                            break
+                        else:
+                            if month == 12:
+                                month = 1
+                                year = year + 1
+                            else:
+                                month = month + 1
 
         return  month_list
 
 
     def __init__(self, scope = "latest", profile = "default", \
+                 end_month = "latest", \
                  config_yaml = "config2.yaml", environment = "local"):
         """
 
@@ -99,6 +107,7 @@ class Config(object):
 
         # running environment
         self.environment = environment
+        self.end_month = end_month
 
 
         # get bill_logs
@@ -118,9 +127,9 @@ class Config(object):
         if(not os.path.exists(self.tmp_dir)):
             os.mkdir(self.tmp_dir)
 
-        self.data_dir = os.path.join(self.cwd, directories["data"])
-        if (not os.path.exists(self.data_dir)):
-            os.mkdir(self.data_dir)
+        #self.data_dir = os.path.join(self.cwd, directories["data"])
+        #if (not os.path.exists(self.data_dir)):
+        #    os.mkdir(self.data_dir)
 
         self.raw_folder = bill_processed["s3_bucket"]["raw_folder"]
         self.raw_prefix = bill_processed["s3_bucket"]["raw_prefix"]
@@ -147,7 +156,7 @@ class Config(object):
             os.mkdir(self.stat_dir)
 
         self.trac_folder = bill_processed["s3_bucket"]["trac_folder"]
-        self.trac_folder_prefix = bill_processed["s3_bucket"]["trac_prefix"]
+        self.trac_prefix = bill_processed["s3_bucket"]["trac_prefix"]
         self.trac_dir = os.path.join(self.cwd, directories["trac"])
         if (not os.path.exists(self.trac_dir)):
             os.mkdir(self.trac_dir)
@@ -182,8 +191,7 @@ class Config(object):
         # scope month_list
         now = time.localtime(time.time())
         yyyy_mm = str(now.tm_year)+"-"+str(now.tm_mon)
-        self.month_list = self.get_months(start_yyyy_mm=self.cost_start,\
-                                          end_yyyy_mm=yyyy_mm)
+        self.month_list = self.get_months()
 
         # merged bill
         self.merge_file = self.yaml_obj.get("statistics")["merge_file"]

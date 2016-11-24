@@ -109,7 +109,8 @@ def main():
 
     # init config
     config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment= cli.environment)
+                        profile=cli.profile, environment= cli.environment, \
+                        end_month=cli.end_month)
 
     # init AWS_Access instance
     aws_bill_tag = AWS_Bill_Tag(config=config, commandline = cli)

@@ -7,6 +7,7 @@
 
 
 import config as cfg
+import bill_cli
 import sys
 import getopt
 import os
@@ -1166,12 +1167,14 @@ def main():
     :return:
     """
 
+
     # get options
-    scope, profile, config_yaml, environment= getopts()
+    cli = bill_cli.CommandLine()
+    cli.get_options()
 
     # init Config instance
-    config = cfg.Config(scope=scope,config_yaml=config_yaml, profile=profile, \
-                        environment= environment)
+    config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, profile=cli.profile, \
+                        environment= cli.environment, end_month = cli.end_month)
 
 
     # init AWS_Access instance

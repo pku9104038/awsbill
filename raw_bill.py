@@ -29,29 +29,17 @@ class AWS_Raw_Bill(object):
         self.s3_client = config.s3_client
         self.s3_resource = config.s3_resource
 
-    def raw_data_clean(self,data):
+    def trim_project_tag(self,row):
         """
 
-        :param data:
+        :param row:
         :return:
         """
 
-        # remove records not 'LineItem'
-        data = data[(data['RecordType'] == 'LineItem')]
-
-        # check columns for lost tags and add them for the firs two months logs
-        columns = list(data.columns.values)
-        print columns
-        for tag in self.config.bill_tags:
-            print tag
-            if not (tag in columns):
-                if tag == self.config.lost_tag["key"]:
-                    data.loc[:, tag] = self.config.lost_tag["value"]  # this not work
-                else:
-                    data.loc[:, tag] = None
-        print data.columns
-        # cols = self.config.raw_columns
-        # df = df[cols]
+        project = row["user:Project"]
+        if not project == None:
+            project = str(project).strip()
+        return project
 
     def proc_detail_tags_bills(self):
         """
@@ -76,13 +64,16 @@ class AWS_Raw_Bill(object):
                 # unzip log csv file
                 self.cli.msg("Unzip: " + filename[len(self.config.log_prefix):])
                 data = zFile.read(filename)
-                file = open(os.path.join(self.config.tmp_dir, \
-                                         filename[len(self.config.log_prefix):]), 'w+b')
+                filepath = os.path.join(self.config.tmp_dir, \
+                                         filename[len(self.config.log_prefix):])
+                file = open(filepath, 'w+b')
                 file.write(data)
                 file.close()
 
                 # read unziped log csv file into pandas dataframe
                 data = pandas.read_csv(file.name, dtype = object, low_memory=False)
+                # remove tmp csv
+                #os.remove(filepath)
 
                 # remove records not 'LineItem'
                 data = data[(data['RecordType'] == 'LineItem')]
@@ -96,6 +87,9 @@ class AWS_Raw_Bill(object):
                             data.loc[:, tag] = self.config.lost_tag["value"]  # this not work
                         else:
                             data.loc[:, tag] = None
+
+                self.cli.msg("Trim : [user:Project]")
+                data["user:Project"] = data.apply(self.trim_project_tag, axis=1)
 
                 # save to local csv
                 csvname = self.config.raw_prefix + filename[len(self.config.log_prefix):]
@@ -116,7 +110,7 @@ class AWS_Raw_Bill(object):
                         put_object(Key=s3key, Body=data)
 
                 # remove local csv
-                # os.remove(csvpath)
+                #os.remove(csvpath)
 
             self.cli.msg("Finish: " + month)
 
@@ -135,7 +129,8 @@ def main():
 
     # init config
     config = cfg.Config(scope=cli.scope, config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment=cli.environment)
+                        profile=cli.profile, environment=cli.environment, \
+                        end_month=cli.end_month)
 
 
     # init AWS_Access instance

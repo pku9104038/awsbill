@@ -23,6 +23,22 @@ class AWS_Trace_Bill(object):
         self.s3_resource = config.s3_resource
         self.cli = commandline
 
+    def get_follow_up_month(self,month):
+        """
+
+        :param month:
+        :return:
+        """
+        y = int(month[:4])
+        m = int(month[5:])
+        if m == 12 :
+            m = 1
+            y += 1
+        else:
+            m += 1
+
+        return self.config.yyyy_mm(y,m)
+
 
     def read_month_raw_data(self,month):
         """
@@ -47,6 +63,36 @@ class AWS_Trace_Bill(object):
         #dtype={"InvoiceID": object}
 
         return bill_data
+
+    def read_month_trac_data(self, month):
+        """
+
+        :param month:
+        :return:
+        """
+
+        # download  file
+        file = self.config.trac_prefix + month + ".csv"
+        key = self.config.trac_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        file = os.path.join(self.config.trac_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(file)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + file)
+        try:
+            data = pandas.read_csv(file, dtype=object, low_memory=False)
+            return False, data
+        except Exception as e:
+            """
+            process option error
+            """
+            print ("open exception: %s: %s\n" %(e.args, e.message))
+            return True, None
+
 
     def save_month_trac_data(self,month, data):
         """
@@ -75,25 +121,34 @@ class AWS_Trace_Bill(object):
         :param data:
         :return:
         """
-        if first_month:
-            all_data = data
-        else:
-            all_data = pandas.concat([data,follow_up_data])
 
-        grouped = all_data.groupby("ResourceId")
 
+        # check in this month data
+        all_data = data
+        grouped = data.groupby("ResourceId")
         for name, group in grouped:
 
             null_data = group[(group["user:Project"].isnull())]
             index = null_data.index
-            print name
             if len(index) > 0:
-                project_data = group[~(group["user:Project"].isnull())]
-                print  "tag: " + str(len(project_data.index)) + "    null " + str(len(index))
+                resource_data = all_data[all_data["ResourceId"] == name]
+                project_data = resource_data[~(resource_data["user:Project"].isnull())]
                 if len(project_data.index) > 0:
-                    project = project_data["user:Project"][project_data.first_valid_index()]
-                    print "project = " +project
+                    project = project_data["user:Project"][project_data["user:Project"].first_valid_index()]
                     data["user:Project"][index] = project
+
+        if  not first_month: # check it again use follow_up month data
+            all_data = follow_up_data
+            grouped = data.groupby("ResourceId")
+            for name, group in grouped:
+                null_data = group[(group["user:Project"].isnull())]
+                index = null_data.index
+                if len(index) > 0:
+                    resource_data = all_data[all_data["ResourceId"] == name]
+                    project_data = resource_data[~(resource_data["user:Project"].isnull())]
+                    if len(project_data.index) > 0:
+                        project = project_data["user:Project"][project_data["user:Project"].first_valid_index()]
+                        data["user:Project"][index] = project
 
     def trace_bills(self, month_list = []):
         """
@@ -112,12 +167,16 @@ class AWS_Trace_Bill(object):
                 self.cli.msg("Start: " + month)
 
                 data = self.read_month_raw_data(month)
+                follow_up_month  = self.get_follow_up_month(month)
 
+                first_month,follow_up_data = self.read_month_trac_data(follow_up_month)
+
+                self.cli.msg("Tracing: " + month)
                 self.tag_by_resourceid(data=data, \
                                            first_month=first_month, \
                                            follow_up_data=follow_up_data)
-                follow_up_data = data
-                first_month = False
+                #follow_up_data = data
+                #first_month = False
                 self.save_month_trac_data(month=month, data=data)
 
                 self.cli.msg("Finish: " + month)
@@ -137,16 +196,8 @@ def main():
 
     # init config
     config = cfg.Config(scope=cli.scope,config_yaml=cli.config_yaml, \
-                        profile=cli.profile, environment= cli.environment)
-
-    if config.scope != "all" and config.scope != "latest" \
-            and config.scope != "last":
-        now = time.localtime(time.time())
-        yyyy_mm = str(now.tm_year) + "-" + str(now.tm_mon)
-        start_month = config.scope
-        config.scope = "all"
-        config.month_list = config.get_months(start_yyyy_mm=start_month, \
-                                              end_yyyy_mm=yyyy_mm)
+                        profile=cli.profile, environment= cli.environment, \
+                        end_month = cli.end_month)
 
     # init AWS_Access instance
     aws_trace_bill = AWS_Trace_Bill(config=config, commandline = cli)
