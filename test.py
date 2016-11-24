@@ -29,6 +29,7 @@ def main():
                                       end_yyyy_mm=yyyy_mm)
         print config.month_list
 
+    print config.calc_read_csv_dtype
 
 if __name__ == '__main__':
     main()

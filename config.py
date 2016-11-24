@@ -110,41 +110,50 @@ class Config(object):
         bill_processed = self.yaml_obj.get("bill_processed")
         self.proc_bucket = bill_processed["s3_bucket"]["bucket_name"]
 
-        self.raw_folder = bill_processed["s3_bucket"]["raw_folder"]
-        self.tag_folder = bill_processed["s3_bucket"]["tag_folder"]
-        self.cal_folder = bill_processed["s3_bucket"]["cal_folder"]
-        self.stat_folder = bill_processed["s3_bucket"]["stat_folder"]
-
-        self.raw_prefix = bill_processed["s3_bucket"]["raw_prefix"]
-        self.tag_prefix = bill_processed["s3_bucket"]["tag_prefix"]
-        self.cal_prefix = bill_processed["s3_bucket"]["cal_prefix"]
-        self.stat_prefix = bill_processed["s3_bucket"]["stat_prefix"]
-
-        # local directory
+        # s3 folder and local dir
         directories = self.yaml_obj.get("directories")
         self.cwd = os.path.abspath(os.path.curdir)
-        self.tmp_dir = os.path.join(self.cwd, directories["tmp"])
-        self.data_dir = os.path.join(self.cwd, directories["data"])
-        self.raw_dir = os.path.join(self.cwd, directories["raw"])
-        self.tag_dir = os.path.join(self.cwd, directories["tag"])
-        self.cal_dir = os.path.join(self.cwd, directories["cal"])
-        self.stat_dir = os.path.join(self.cwd, directories["stat"])
 
+        self.tmp_dir = os.path.join(self.cwd, directories["tmp"])
         if(not os.path.exists(self.tmp_dir)):
             os.mkdir(self.tmp_dir)
+
+        self.data_dir = os.path.join(self.cwd, directories["data"])
         if (not os.path.exists(self.data_dir)):
             os.mkdir(self.data_dir)
+
+        self.raw_folder = bill_processed["s3_bucket"]["raw_folder"]
+        self.raw_prefix = bill_processed["s3_bucket"]["raw_prefix"]
+        self.raw_dir = os.path.join(self.cwd, directories["raw"])
         if (not os.path.exists(self.raw_dir)):
             os.mkdir(self.raw_dir)
+
+        self.tag_folder = bill_processed["s3_bucket"]["tag_folder"]
+        self.tag_prefix = bill_processed["s3_bucket"]["tag_prefix"]
+        self.tag_dir = os.path.join(self.cwd, directories["tag"])
         if (not os.path.exists(self.tag_dir)):
             os.mkdir(self.tag_dir)
+
+        self.cal_folder = bill_processed["s3_bucket"]["cal_folder"]
+        self.cal_prefix = bill_processed["s3_bucket"]["cal_prefix"]
+        self.cal_dir = os.path.join(self.cwd, directories["cal"])
         if (not os.path.exists(self.cal_dir)):
             os.mkdir(self.cal_dir)
+
+        self.stat_folder = bill_processed["s3_bucket"]["stat_folder"]
+        self.stat_prefix = bill_processed["s3_bucket"]["stat_prefix"]
+        self.stat_dir = os.path.join(self.cwd, directories["stat"])
         if (not os.path.exists(self.stat_dir)):
             os.mkdir(self.stat_dir)
 
+        self.trac_folder = bill_processed["s3_bucket"]["trac_folder"]
+        self.trac_folder_prefix = bill_processed["s3_bucket"]["trac_prefix"]
+        self.trac_dir = os.path.join(self.cwd, directories["trac"])
+        if (not os.path.exists(self.trac_dir)):
+            os.mkdir(self.trac_dir)
+
         # tags
-        self.bill_tags = self.yaml_obj.get("bill_tags")
+        self.bill_tags = self.yaml_obj.get("bill_columns")["user_tags"]
         self.lost_tag = self.yaml_obj.get("lost_tag")
 
         # cost tags
@@ -155,6 +164,7 @@ class Config(object):
         # bill columns
         self.raw_columns = self.yaml_obj.get("bill_columns")["raw"]
         self.calc_columns = self.yaml_obj.get("bill_columns")["calc"]
+        self.calc_read_csv_dtype =self.yaml_obj.get("bill_columns")["calc_read_csv_dtype"]
 
         # aws seesion
         self.profile = profile

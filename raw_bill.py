@@ -8,7 +8,7 @@
 import zipfile as zip
 import pandas
 import os
-import numpy
+import csv
 
 import bill_cli
 import config as cfg
@@ -28,6 +28,30 @@ class AWS_Raw_Bill(object):
         self.session = config.session
         self.s3_client = config.s3_client
         self.s3_resource = config.s3_resource
+
+    def raw_data_clean(self,data):
+        """
+
+        :param data:
+        :return:
+        """
+
+        # remove records not 'LineItem'
+        data = data[(data['RecordType'] == 'LineItem')]
+
+        # check columns for lost tags and add them for the firs two months logs
+        columns = list(data.columns.values)
+        print columns
+        for tag in self.config.bill_tags:
+            print tag
+            if not (tag in columns):
+                if tag == self.config.lost_tag["key"]:
+                    data.loc[:, tag] = self.config.lost_tag["value"]  # this not work
+                else:
+                    data.loc[:, tag] = None
+        print data.columns
+        # cols = self.config.raw_columns
+        # df = df[cols]
 
     def proc_detail_tags_bills(self):
         """
@@ -58,28 +82,30 @@ class AWS_Raw_Bill(object):
                 file.close()
 
                 # read unziped log csv file into pandas dataframe
-                data = pandas.read_csv(file.name, dtype=object, low_memory=False)
+                data = pandas.read_csv(file.name, dtype = object, low_memory=False)
 
                 # remove records not 'LineItem'
-                df = data[(data['RecordType'] == 'LineItem')]
+                data = data[(data['RecordType'] == 'LineItem')]
 
-                # check columns for lost tags and add them for the firs two months logs
-                columns = list(df.columns.values)
+                # check columns for lost user tags and add them
+                # tag first two month with ztjy
+                columns = list(data.columns.values)
                 for tag in self.config.bill_tags:
-                    if not (tag["tag"] in columns):
-                        if tag["tag"] == self.config.lost_tag["key"]:
-                            df.loc[:,tag["tag"]] = self.config.lost_tag["value"] # this not work
+                    if not (tag in columns):
+                        if tag == self.config.lost_tag["key"]:
+                            data.loc[:, tag] = self.config.lost_tag["value"]  # this not work
                         else:
-                            df.loc[:,tag["tag"]] = numpy.nan
+                            data.loc[:, tag] = None
 
                 # save to local csv
                 csvname = self.config.raw_prefix + filename[len(self.config.log_prefix):]
                 csvpath = os.path.join(self.config.raw_dir, csvname)
-
-                cols = self.config.raw_columns
-                df = df[cols]
                 self.cli.msg("Save as: " + csvpath)
-                df.to_csv(csvpath, index=False, sep=";")
+                columns = self.config.raw_columns
+                data = data[columns]
+                data.to_csv(csvpath, index=False, quoting= csv.QUOTE_ALL)
+                # use sep=";" will cause pandas.io.common.CParserError: Error tokenizing data
+                # change to quoting= csv.QUOTE_ALL
 
                 # upload to s3 processed bucket
                 if self.config.environment == "s3":
@@ -94,7 +120,7 @@ class AWS_Raw_Bill(object):
 
             self.cli.msg("Finish: " + month)
 
-            # remove zipfile
+            # remove local zip_file
             #os.remove(zip_file)
 
 

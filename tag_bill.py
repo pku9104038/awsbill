@@ -7,7 +7,7 @@
 # Upload tags file to s3
 
 
-import pandas
+import pandas, csv
 import os
 import traceback
 import bill_cli, config as cfg
@@ -40,7 +40,7 @@ class AWS_Bill_Tag(object):
             tag_file = os.path.join(self.config.tag_dir,
                                     self.config.cost_tags_file)
             self.cli.msg("Read: " + tag_file)
-            tags_pools = pandas.read_csv(tag_file, low_memory=False)
+            tags_pools = pandas.read_csv(tag_file, dtype = object, low_memory=False)
             for month in month_list:
                 print "\n"
                 self.cli.msg("Start: " + month)
@@ -60,7 +60,7 @@ class AWS_Bill_Tag(object):
                     # read bill csv file into pandas dataframe
                     self.cli.msg("Read: " + bill_file)
                     bill_data = pandas.read_csv(bill_file, \
-                                                dtype={"InvoiceID": object}, \
+                                                dtype=object, \
                                                 low_memory=False)
 
                     tags_data = pandas.DataFrame(columns=["user:Project"])
@@ -76,7 +76,7 @@ class AWS_Bill_Tag(object):
                         tag_name = self.config.tag_prefix + month + ".csv"
                         tag_file = os.path.join(self.config.tag_dir, tag_name)
                         self.cli.msg("Save as: " + tag_file)
-                        month_data.to_csv(tag_file, index=False, sep=';')
+                        month_data.to_csv(tag_file, index=False, quoting= csv.QUOTE_ALL)
 
                         if self.config.environment == "s3":
                             tag_key = self.config.tag_folder + tag_name

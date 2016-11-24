@@ -3,7 +3,7 @@
 # Script for aws bill data processing and statistics
 # Trace back project tags for null resources
 
-import pandas
+import pandas, csv
 import bill_cli
 import config as cfg
 import time, sys, os
@@ -43,11 +43,12 @@ class AWS_Trace_Bill(object):
 
         # read bill csv file into pandas dataframe
         self.cli.msg("Read: " + bill_file)
-        bill_data = pandas.read_csv(bill_file, dtype={"InvoiceID": object}, low_memory=False)
+        bill_data = pandas.read_csv(bill_file, dtype = object, low_memory=False)
+        #dtype={"InvoiceID": object}
 
         return bill_data
 
-    def save_month_raw_data(self,month, data):
+    def save_month_trac_data(self,month, data):
         """
 
         :param month:
@@ -55,15 +56,15 @@ class AWS_Trace_Bill(object):
         :return:
         """
 
-        raw_name = self.config.raw_prefix + month + ".csv"
-        raw_file = os.path.join(self.config.raw_dir, raw_name)
-        self.cli.msg("Save as: " + raw_file)
-        data.to_csv(raw_file, index=False, sep=';')
+        name = self.config.trac_prefix + month + ".csv"
+        file = os.path.join(self.config.trac_dir, name)
+        self.cli.msg("Save as: " + file)
+        data.to_csv(file, index=False, quoting= csv.QUOTE_ALL)
 
-        s3key = self.config.raw_folder + raw_name
+        s3key = self.config.raw_folder + name
         if self.config.environment == "s3":
             self.cli.msg("Upload: " + s3key)
-            data = open(raw_file, 'rb')
+            data = open(file, 'rb')
             file_obj = self.s3_resource.Bucket( \
                 self.config.proc_bucket).put_object(Key=s3key, Body=data)
 
@@ -82,13 +83,16 @@ class AWS_Trace_Bill(object):
         grouped = all_data.groupby("ResourceId")
 
         for name, group in grouped:
-            resourceid = name[0]
-            bull_data = group[(group["user:Project"].isnull())]
-            index = bull_data.index
+
+            null_data = group[(group["user:Project"].isnull())]
+            index = null_data.index
+            print name
             if len(index) > 0:
                 project_data = group[~(group["user:Project"].isnull())]
+                print  "tag: " + str(len(project_data.index)) + "    null " + str(len(index))
                 if len(project_data.index) > 0:
                     project = project_data["user:Project"][project_data.first_valid_index()]
+                    print "project = " +project
                     data["user:Project"][index] = project
 
     def trace_bills(self, month_list = []):
@@ -104,6 +108,9 @@ class AWS_Trace_Bill(object):
             follow_up_data = None
             for l in range(1,length+1):
                 month = month_list[length-l]
+                print "\n"
+                self.cli.msg("Start: " + month)
+
                 data = self.read_month_raw_data(month)
 
                 self.tag_by_resourceid(data=data, \
@@ -111,7 +118,9 @@ class AWS_Trace_Bill(object):
                                            follow_up_data=follow_up_data)
                 follow_up_data = data
                 first_month = False
-                self.save_month_raw_data(month=month, data=data)
+                self.save_month_trac_data(month=month, data=data)
+
+                self.cli.msg("Finish: " + month)
 
 
 

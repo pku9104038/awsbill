@@ -936,7 +936,8 @@ class AWS_Access(object):
 
         # read bill csv file into pandas dataframe
         print "read bill raw csv: " + month +"......" + self.now()
-        bill_data = pandas.read_csv(bill_file, dtype={"InvoiceID" : object}, low_memory=False)
+
+        bill_data = pandas.read_csv(bill_file, dtype=self.config.calc_read_csv_dtype, low_memory=False)
 
 
         # tag metric_monitor_usage according to the instance_id

@@ -14,6 +14,8 @@ bill_processed:
     bucket_name: edusoft-aws-bill-work
     raw_folder: raw/
     raw_prefix: raw-
+    trac_folder: trac/
+    trac_prefix: trac-
     tag_folder: tags/
     tag_prefix: cost_tags-
     cal_folder: calc/
@@ -26,18 +28,11 @@ directories:
   tmp: tmp
   data: data
   raw: raw
+  trac: trac
   tag: tags
   cal: calc
   stat: stat
 
-# bill tags
-bill_tags:
-  - tag: "user:Bill"
-  - tag: "user:billTag"
-  - tag: "user:Customer"
-  - tag: "user:Name"
-  - tag: "user:Division"
-  - tag: "user:Project"
 
 # lost tag
 lost_tag:
@@ -53,6 +48,13 @@ cost_tags:
   join_key: "user:Project"
 
 bill_columns:
+  user_tags:
+    #- "user:Bill"
+    #- "user:billTag"
+    #- "user:Name"
+    - "user:Project"
+    #- "user:Division"
+    #- "user:Customer"
   calc:
     - "index"
     - "InvoiceID"
@@ -87,47 +89,33 @@ bill_columns:
     - "InvoiceID"
     - "PayerAccountId"
     - "LinkedAccountId"
-    - "RecordType"
     - "RecordId"
-    - "user:Project"
-    - "user:Name"
     - "ProductName"
-    - "ItemDescription"
-    - "UsageType"
-    - "ResourceId"
-    - "Operation"
-    - "UsageQuantity"
-    - "AvailabilityZone"
-    - "ReservedInstance"
+    - "RateId"
     - "SubscriptionId"
     - "PricingPlanId"
-    - "RateId"
+    - "UsageType"
+    - "Operation"
+    - "AvailabilityZone"
+    - "ReservedInstance"
+    - "ItemDescription"
+    - "UsageStartDate"
+    - "UsageEndDate"
+    - "UsageQuantity"
     - "BlendedRate"
     - "BlendedCost"
     - "UnBlendedRate"
     - "UnBlendedCost"
-    - "UsageStartDate"
-    - "UsageEndDate"
-    #- "user:Bill"
-    #- "user:billTag"
-    #- "user:Division"
-    #- "user:Customer"
-
+    - "ResourceId"
+    - "user:Project"
+  calc_read_csv_dtype:
+    UsageQuantity: "np.float64"
+    BlendedRate: "np.float64"
+    BlendedCost: "np.float64"
+    UnBlendedRate: "np.float64"
+    UnBlendedCost: "np.float64"
 
 # statistics file
 statistics:
   merge_file: history_bill.csv
 
-# platform list of AWS
-platform:
-  - item: "Linux"
-  - item: "Windows"
-  - item: "MySQL"
-  - item: "PostgreSQL"
-  - item: "SQL Server"
-  - item: "Oracle"
-  - item: "Memcached"
-  - item: "Redis"
-  - item: "DynamoDB"
-  - item: "Redshift"
-  - item: "LoadBalancer"
