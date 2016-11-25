@@ -568,9 +568,9 @@ class AWS_Calc_Bill(object):
         s3key = self.config.cal_folder + name
         if self.config.environment == "s3":
             self.cli.msg("Upload: " + s3key)
-            data = open(file, 'rb')
+            file_data = open(file, 'rb')
             file_obj = self.s3_resource.Bucket( \
-                self.config.proc_bucket).put_object(Key=s3key, Body=data)
+                self.config.proc_bucket).put_object(Key=s3key, Body=file_data)
 
         if self.config.remove == "yes":
             self.cli.msg("Remove: " + file)
