@@ -7,7 +7,7 @@ import yaml
 import os
 import boto3
 import time
-import bill_cli
+
 
 class Config(object):
     """

@@ -8,11 +8,7 @@
 
 import config as cfg
 import bill_cli
-import bill_cli
-import sys
-import getopt
 import os
-import shutil
 import datetime
 import traceback
 import pandas
@@ -20,108 +16,6 @@ import time
 import hashlib
 
 import csv
-
-# Define the usage helper and get options function
-
-def usage():
-    """
-    print usage command help
-    :return:
-    """
-    print "please usage:"
-    print "python "+ sys.argv[0] +" [-s scope] + [-p profile] [-c config_yaml]"
-
-    # for option -s
-    print ""
-    print "    -s: options for processing scope"
-    print "         all: cal-yyyy-mm.csv for all month "
-    print "         last: cal-yyyy-mm.csv for last month"
-    print "         latest: cal-yyyy-mm.csv for latest month"
-    print "         yyyy-mm: cal-yyyy-mm.csv"
-    print "         default: latest"
-    print ""
-
-    # for option -p
-    print ""
-    print "    -p: setting aws access profile"
-    print "         profile: the [profile] in .aws/config, .aws/credentials"
-    print "         default: default"
-    print ""
-
-    # for option -c
-    print ""
-    print "    -c: setting configuration yaml file"
-    print "         config_yaml: the .yaml file  work directory"
-    print "         default: config2.yaml"
-    print ""
-
-
-    # for option -e
-    print ""
-    print "    -e: running environment"
-    print "         local: running local files only "
-    print "         s3: download/upload from/to s3"
-    print "         default: s3"
-    print ""
-
-
-def getopts():
-    """
-    get options from command line parameters
-    :return: scope
-    """
-
-
-    # set defaults
-    opts = []
-    args = []
-
-    scope = "latest"
-    profile = "default"
-    config = "config2.yaml"
-    environment = "local"
-
-    # get options
-    try:
-        """
-        try to get commandline options
-        """
-        opts,args = getopt.getopt(sys.argv[1:],"h:s:p:c:e:")
-    except Exception as e:
-        """
-        process option error
-        """
-        print ("open exception: %s: %s\n" %(e.args, e.message))
-        usage()
-        sys.exit(1)
-
-    # use default option if no command line input
-    if len(opts) == 0:
-        """
-        process null option
-        """
-        print "############ "
-        print "runnning default options: "
-        print "python "+ sys.argv[0] +" -s "+ scope + \
-                    " -p "+ profile + " -c " + config + " -e " + environment
-        print "############ "
-        # continue script with default options
-
-    # set options according to command line input
-    for op, value in opts:
-        if op == "-s":
-            scope = value
-        elif op == "-p":
-            profile = value
-        elif op == "-c":
-            config = value
-        elif op == "-e":
-            environment = value
-        elif op == "-h":
-            usage()
-            sys.exit()
-
-    return scope, profile, config, environment
 
 
 class AWS_Calc_Bill(object):
@@ -361,7 +255,6 @@ class AWS_Calc_Bill(object):
         data["Platform"][index] = "Support"
         data["UsageType"][index] = "Support"
 
-
     def tag_metric_monitor_usage(self, data):
         """
 
@@ -395,7 +288,6 @@ class AWS_Calc_Bill(object):
             return self.config.lost_tag["value"]
         else:
             return row["user:Project"]
-
 
     def default_adjust_cost(self, row):
         """
@@ -518,30 +410,11 @@ class AWS_Calc_Bill(object):
                             data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
 
 
-
     def get_bill_date(self,data):
         """
 
         :param data:
         :return:
-        """
-        """
-        ondemand = data[(data.ItemDescription != "Recurring Fee") \
-                           & (data.ItemDescription != "税金 VAT 类型") \
-                        & (data.ReservedInstance == "N")]
-
-        VAT = data[data.ItemDescription == "税金 VAT 类型" ]
-        usage_end_date = ondemand["UsageEndDate"].max()
-        bill_datetime = datetime.datetime.strptime(usage_end_date, \
-                                                   "%Y-%m-%d %H:%M:%S")
-        vat_end_date = VAT["UsageEndDate"].max()
-        end_of_month = datetime.datetime.strptime(vat_end_date, \
-                                                  "%Y-%m-%d %H:%M:%S")
-        left_datetime = end_of_month - bill_datetime
-        hours = left_datetime.seconds/60/60 + left_datetime.days*24
-        print "bill time " + usage_end_date
-        print str(hours) + " hours left"
-
         """
 
         this_month = data[data.Platform != "Support"]

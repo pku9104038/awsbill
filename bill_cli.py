@@ -5,7 +5,7 @@
 # Print message to stdout
 
 import getopt
-import sys, time
+import sys
 import datetime
 
 

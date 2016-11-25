@@ -6,7 +6,7 @@
 import pandas, csv
 import bill_cli
 import config as cfg
-import time, sys, os
+import os
 
 class AWS_Trace_Bill(object):
     """

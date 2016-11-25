@@ -10,5 +10,5 @@ sudo pip install virtualenv
 virtualenv pyenv
 source ./pyenv/bin/activate
 pip install boto3
-
-
+pip install PyYAML
+pip install pandas

@@ -52,10 +52,10 @@ class AWS_Bill_Tag(object):
                     try download bill and tag files, then cal and upload
                     """
                     # download bill file if scope = s3
-                    bill_file = self.config.raw_prefix + month + ".csv"
-                    bill_key = self.config.raw_folder + bill_file
+                    bill_file = self.config.trac_prefix + month + ".csv"
+                    bill_key = self.config.trac_folder + bill_file
                     obj = self.s3_resource.Object(self.config.proc_bucket, bill_key)
-                    bill_file = os.path.join(self.config.raw_dir, bill_file)
+                    bill_file = os.path.join(self.config.trac_dir, bill_file)
                     if self.config.environment == "s3":
                         self.cli.msg("Download: " + bill_key)
                         obj.download_file(bill_file)
