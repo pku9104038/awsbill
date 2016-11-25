@@ -115,7 +115,7 @@ class AWS_Trace_Bill(object):
         self.cli.msg("Save as: " + file)
         data.to_csv(file, index=False, quoting= csv.QUOTE_ALL)
 
-        s3key = self.config.raw_folder + name
+        s3key = self.config.trac_folder + name
         if self.config.environment == "s3":
             self.cli.msg("Upload: " + s3key)
             data = open(file, 'rb')

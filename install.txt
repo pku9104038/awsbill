@@ -1,0 +1,14 @@
+# example of installation on ubuntu 14 lts
+
+sudo apt-get update
+sudo apt-get upgrade
+
+sudo apt-get install python-pip python-dev git
+
+sudo pip install virtualenv
+
+virtualenv pyenv
+source ./pyenv/bin/activate
+pip install boto3
+
+

@@ -109,6 +109,7 @@ bill_columns:
     - "ResourceId"
     - "user:Project"
   calc_read_csv_dtype:
+    InvoiceId: "str"
     UsageQuantity: "float64"
     BlendedRate: "float64"
     BlendedCost: "float64"

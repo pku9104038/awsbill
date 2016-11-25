@@ -558,8 +558,9 @@ class AWS_Calc_Bill(object):
                                                   "%Y-%m-%d %H:%M:%S")
         left_datetime = end_of_month - end_datetime
         hours = left_datetime.seconds / 60 / 60 + left_datetime.days * 24
-        print "bill time " + str(end_datetime)
-        print "this month [ "+ str(hours) + " ] hours left"
+        if hours > 0:
+            self.cli.msg("Bill Time " + str(end_datetime))
+            self.cli.msg( "[ "+ str(hours) + " ] hours to the end of this month")
 
 
     def startstamp(self, row):
@@ -658,6 +659,22 @@ class AWS_Calc_Bill(object):
 
         return data
 
+    def check_estimated(self, data):
+        """
+
+        :param data:
+        :return:
+        """
+
+        estimated = False
+        grouped = data.groupby("InvoiceID")
+        for name, group in grouped:
+            if name == "Estimated":
+                estimated = True
+                break
+
+        return estimated
+
     def save_month_calc_data(self, month, data):
         """
 
@@ -667,8 +684,8 @@ class AWS_Calc_Bill(object):
         """
 
         name = self.config.cal_prefix + month + ".csv"
-        estimated_data = data[data["InvoiceID"] == "Estimated"]
-        if len(estimated_data.index) > 0:
+
+        if self.check_estimated(data=data):
             name = "estimated-" + month + ".csv"
 
         file = os.path.join(self.config.cal_dir, name)
