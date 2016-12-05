@@ -4,6 +4,8 @@ import bill_cli
 import config as cfg
 import time
 
+import json
+
 def main():
     """
     main function for this script
@@ -20,7 +22,8 @@ def main():
     config = cfg.Config(cli.option)
 
 
-    print config.month_list
+    print json.dumps(config.month_list, indent=4)
+    cli.msg(json.dumps(config.month_list, indent=4))
     cli.msg("".join(config.month_list))
 
 

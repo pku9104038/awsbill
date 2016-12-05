@@ -12,6 +12,7 @@ import csv
 
 import bill_cli
 import config as cfg
+import json
 
 class AWS_Raw_Bill(object):
     """
@@ -48,7 +49,8 @@ class AWS_Raw_Bill(object):
         """
 
         self.cli.msg("RAW_BILL: ")
-        print self.config.month_list
+        #print self.config.month_list
+        self.cli.msg(json.dumps(obj=self.config.month_list, indent=4))
 
         for month in self.config.month_list:
             #print "\n"
@@ -126,7 +128,7 @@ class AWS_Raw_Bill(object):
                 self.cli.msg("Remove: " + zip_file)
                 os.remove(zip_file)
 
-        print "\n"
+        #print "\n"
 
 
 def main():
@@ -147,8 +149,8 @@ def main():
     aws_raw_bill.proc_detail_tags_bills()
 
 
-    print "\n"
-    aws_raw_bill.cli.msg("You got it !  Cheers! \n")
+    #print "\n"
+    aws_raw_bill.cli.msg("You got it !  Cheers!")
 
 if __name__ == '__main__':
     main()

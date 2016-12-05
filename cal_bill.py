@@ -15,7 +15,7 @@ import pandas
 import time
 import hashlib
 
-import csv
+import csv,json
 
 
 class AWS_Calc_Bill(object):
@@ -644,7 +644,8 @@ class AWS_Calc_Bill(object):
 
         month_list = self.config.month_list
         self.cli.msg("CALC_BILL: ")
-        print self.config.month_list
+        #print self.config.month_list
+        self.cli.msg(json.dumps(obj=self.config.month_list, indent=4))
         if len(month_list) > 0:
             for month in month_list:
 
@@ -668,13 +669,13 @@ class AWS_Calc_Bill(object):
                     """
                     process option error
                     """
-                    #print ("open exception: %s: %s\n" % (e.args, e.message))
+                    self.cli.msg("open exception: %s: %s\n" % (e.args, e.message))
                     traceback.print_exc()
 
                 self.cli.msg("Finish: " + month)
 
 
-        print "\n"
+        #print "\n"
 
 
 def main():
@@ -697,8 +698,8 @@ def main():
 
     aws_calc_bill.cal_bills()
 
-    print "\n"
-    aws_calc_bill.cli.msg("You got it !  Cheers! \n")
+    #print "\n"
+    aws_calc_bill.cli.msg("You got it !  Cheers!")
 
 
 if __name__ == '__main__':

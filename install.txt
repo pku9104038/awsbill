@@ -3,7 +3,7 @@
 sudo apt-get update
 sudo apt-get upgrade
 
-sudo apt-get install python-pip python-dev git
+sudo apt-get install python-pip python-dev git libpq-dev
 
 sudo pip install virtualenv
 

@@ -176,6 +176,7 @@ class AWS_Auto_Bill(object):
 def main():
 
     commandline = cli.CommandLine()
+    commandline.get_options()
     config = cfg.Config(commandline.option)
 
     aws_auto_bill = AWS_Auto_Bill(commandline=commandline, config=config)
@@ -184,10 +185,13 @@ def main():
     aws_auto_bill.raw_bills()
 
     #aws_auto_bill.check_trace_back_month(n=aws_auto_bill.trace_back_month)
+
     aws_auto_bill.trac_bills()
     aws_auto_bill.tag_bills()
     aws_auto_bill.calc_bills()
     aws_auto_bill.load_bills()
+
+    aws_auto_bill.cli.msg("You got it !  Cheers!")
 
 if __name__ == "__main__":
     main()

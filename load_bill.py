@@ -5,7 +5,7 @@
 import config as cfg
 import bill_cli
 import psycopg2 as pg
-import StringIO
+import json
 
 class AWS_Load_Bill(object):
     """
@@ -158,7 +158,8 @@ class AWS_Load_Bill(object):
         """
 
         self.cli.msg("LOAD_BILL: ")
-        print self.config.month_list
+        #print self.config.month_list
+        self.cli.msg(json.dumps(obj=self.config.month_list, indent=4))
         calc_bill, estimated_bill = self.check_new_calc_bill()
         if (calc_bill!=None):
 
@@ -183,7 +184,7 @@ class AWS_Load_Bill(object):
                             s3key="s3://"+self.config.proc_bucket+"/"+ \
                                   self.config.cal_folder+self.config.estimated_prefix)
 
-        print "\n"
+        #print "\n"
 
 
 
@@ -215,8 +216,8 @@ def main():
     #aws_load_bill.table_vacuum(table=table)
     aws_load_bill.load_latest_bills()
 
-    print "\n"
-    aws_load_bill.cli.msg("You got it !  Cheers! \n")
+    #print "\n"
+    aws_load_bill.cli.msg("You got it !  Cheers!")
 
 
 if __name__ == '__main__':

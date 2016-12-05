@@ -11,6 +11,7 @@ import pandas, csv
 import os
 import traceback
 import bill_cli, config as cfg
+import json
 
 
 class AWS_Bill_Tag(object):
@@ -38,7 +39,8 @@ class AWS_Bill_Tag(object):
 
 
         self.cli.msg("TAG_BILL: ")
-        print self.config.month_list
+        #print self.config.month_list
+        self.cli.msg(json.dumps(obj=self.config.month_list, indent=4))
         month_list = self.config.month_list
         if len(month_list) > 0:
             # read cost tags file into pandas dataframe
@@ -97,11 +99,12 @@ class AWS_Bill_Tag(object):
                     """
                     process option error
                     """
-                    # print ("open exception: %s: %s\n" % (e.args, e.message))
+                    self.cli.msg("open exception: %s: %s\n" % (e.args, e.message))
                     traceback.print_exc()
 
+
                 self.cli.msg("Finish: " + month)
-        print "\n"
+        #print "\n"
 
 
 def main():
@@ -122,8 +125,8 @@ def main():
 
     aws_bill_tag.tags_bills()
 
-    print "\n"
-    aws_bill_tag.cli.msg("You got it !  Cheers! \n")
+    #print "\n"
+    aws_bill_tag.cli.msg("You got it !  Cheers!")
 
 
 if __name__ == '__main__':

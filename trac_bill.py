@@ -6,7 +6,7 @@
 import pandas, csv
 import bill_cli
 import config as cfg
-import os
+import os, json
 
 class AWS_Trace_Bill(object):
     """
@@ -98,7 +98,7 @@ class AWS_Trace_Bill(object):
             """
             process option error
             """
-            print ("open exception: %s: %s\n" %(e.args, e.message))
+            self.cli.msg("open exception: %s: %s\n" %(e.args, e.message))
             return True, None
 
 
@@ -170,7 +170,8 @@ class AWS_Trace_Bill(object):
 
         month_list = self.config.month_list
         self.cli.msg("TRAC_BILL: ")
-        print self.config.month_list
+        #print self.config.month_list
+        self.cli.msg(json.dumps(obj=self.config.month_list, indent=4))
 
         length = len(month_list)
         if length > 0:
@@ -195,7 +196,7 @@ class AWS_Trace_Bill(object):
                 self.save_month_trac_data(month=month, data=data)
 
                 self.cli.msg("Finish: " + month)
-        print "\n"
+        #print "\n"
 
 
 
@@ -218,8 +219,8 @@ def main():
 
     aws_trace_bill.trace_bills()
 
-    print "\n"
-    aws_trace_bill.cli.msg("You got it !  Cheers! \n")
+    #print "\n"
+    aws_trace_bill.cli.msg("You got it !  Cheers!")
 
 
 if __name__ == '__main__':

@@ -7,6 +7,8 @@
 import getopt
 import sys
 import datetime
+import logging
+import json
 
 
 class Options(object):
@@ -30,11 +32,32 @@ class CommandLine(object):
     """
 
     def msg(self, message):
-        print self.now() + " ...... " + message
+        #print self.now() + " ...... " + message
+        self.console_logger.critical(message)
+        self.file_logger.info(message)
 
     def __init__(self):
         self.option = Options()
         self.script = ""
+
+        self.file_logger = logging.getLogger("awsbill")
+        self.file_logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler("./tmp/bill.log")
+        fmt = logging.Formatter('%(asctime)s ...... %(message)s')
+        #fmt = logging.Formatter('%(asctime)s %(name)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
+        fh.setFormatter(fmt=fmt)
+        self.file_logger.addHandler(fh)
+
+        self.console_logger = logging.getLogger("awsbill")
+        ch = logging.StreamHandler()
+        fmt = logging.Formatter('%(asctime)s ...... %(message)s')
+        ch.setFormatter(fmt=fmt)
+        self.console_logger.setLevel(logging.CRITICAL)
+        self.console_logger.addHandler(ch)
+
+        #fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
 
         """
         self.scope = "latest"
@@ -48,7 +71,7 @@ class CommandLine(object):
 
         """
 
-        self.msg("I am here, one moment please......\n")
+        self.msg("I am here, one moment please......")
 
     def usage(self):
         """
@@ -118,6 +141,16 @@ class CommandLine(object):
                                           '%Y-%m-%d %H:%M:%S')
 
 
+    def script_start(self):
+        #print "\n................\n"
+
+        msg = "python " + sys.argv[0] + " -p " + self.option.profile + \
+              " -c " + self.option.config_yaml + " -l " + self.option.environment +\
+              " -m " + self.option.scope + " -e " + self.option.end_month +\
+              " -r " + self.option.remove
+        self.msg(message=msg)
+        #print "\n................\n"
+
 
     def get_options(self):
         """
@@ -162,17 +195,11 @@ class CommandLine(object):
             """
             process option error
             """
-            print ("open exception: %s: %s\n" %(e.args, e.message))
+            self.msg("open exception: %s: %s\n" %(e.args, e.message))
             self.usage()
             sys.exit(1)
 
-
-        print "\n................\n"
-        print "python " + sys.argv[0] + " -p " + self.option.profile + \
-              " -c " + self.option.config_yaml + " -l " + self.option.environment +\
-              " -m " + self.option.scope + " -e " + self.option.end_month +\
-              " -r " + self.option.remove
-        print "\n................\n"
+        self.script_start()
 
 
 
