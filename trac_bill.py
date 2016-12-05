@@ -169,7 +169,8 @@ class AWS_Trace_Bill(object):
         """
 
         month_list = self.config.month_list
-        print month_list
+        self.cli.msg("TRAC_BILL: ")
+        print self.config.month_list
 
         length = len(month_list)
         if length > 0:
@@ -177,7 +178,7 @@ class AWS_Trace_Bill(object):
             follow_up_data = None
             for l in range(1,length+1):
                 month = month_list[length-l]
-                print "\n"
+                #print "\n"
                 self.cli.msg("Start: " + month)
 
                 data = self.read_month_raw_data(month)
@@ -194,6 +195,7 @@ class AWS_Trace_Bill(object):
                 self.save_month_trac_data(month=month, data=data)
 
                 self.cli.msg("Finish: " + month)
+        print "\n"
 
 
 

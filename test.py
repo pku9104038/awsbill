@@ -17,10 +17,11 @@ def main():
 
     cli.msg("I am here")
 
-    config = cfg.Config(scope=cli.scope, end_month=cli.end_month)
+    config = cfg.Config(cli.option)
 
 
     print config.month_list
+    cli.msg("".join(config.month_list))
 
 
 if __name__ == '__main__':

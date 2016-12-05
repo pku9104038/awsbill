@@ -22,10 +22,15 @@ class Options(object):
         self.remove = "no"
 
 
+
+
 class CommandLine(object):
     """
     class for command line operation and stdout
     """
+
+    def msg(self, message):
+        print self.now() + " ...... " + message
 
     def __init__(self):
         self.option = Options()
@@ -39,7 +44,11 @@ class CommandLine(object):
 
         now = time.localtime(time.time())
         self.end_month = ""
+
+
         """
+
+        self.msg("I am here, one moment please......\n")
 
     def usage(self):
         """
@@ -108,8 +117,7 @@ class CommandLine(object):
         return datetime.datetime.strftime(datetime.datetime.now(), \
                                           '%Y-%m-%d %H:%M:%S')
 
-    def msg(self,message):
-        print self.now() + " ...... " + message
+
 
     def get_options(self):
         """
@@ -166,4 +174,35 @@ class CommandLine(object):
               " -r " + self.option.remove
         print "\n................\n"
 
-        self.msg("I am running, one moment please......\n")
+
+
+    def set_options(self,scope=None,profile=None,config_yaml=None, \
+                    environment = None, remove= None, end_month= None):
+        """
+
+        :param scope:
+        :param profile:
+        :param config_yaml:
+        :param environment:
+        :param remove:
+        :param end_month:
+        :return:
+        """
+
+        if scope != None:
+            self.scope =scope
+
+        if profile != None:
+            self.profile = profile
+
+        if config_yaml != None:
+            self.config_yaml = config_yaml
+
+        if environment != None:
+            self.environemnt = environment
+
+        if remove != None:
+            self.remove = remove
+
+        if end_month != None:
+            self.end_month = end_month

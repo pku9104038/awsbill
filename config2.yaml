@@ -20,6 +20,7 @@ bill_processed:
     tag_prefix: cost_tags-
     cal_folder: calc/
     cal_prefix: calc-
+    estimated_prefix: estimated-
     stat_folder: stat/
     stat_prefix: stat-
 
@@ -116,7 +117,22 @@ bill_columns:
     UnBlendedRate: "float64"
     UnBlendedCost: "float64"
 
+
 # statistics file
 statistics:
   merge_file: history_bill.csv
 
+# redshift
+redshift:
+  host: "aws-bill-redshift.crq8jjp20eii.cn-north-1.redshift.amazonaws.com.cn"
+  port: "5439"
+  user: "redshiftawsbill"
+  passwd: "AWSbill5439"
+  database: "awsbill"
+  credentials: "aws_access_key_id=AKIAPIIVJSNYQ2S2YNDA;aws_secret_access_key=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"
+  tables:
+    history: "history_bill"
+    year: "year_bill"
+    month: "month_bill"
+    estimated: "estimated_bill"
+    tmp: "tmp_bill"

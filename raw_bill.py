@@ -47,10 +47,11 @@ class AWS_Raw_Bill(object):
         :return:
         """
 
+        self.cli.msg("RAW_BILL: ")
         print self.config.month_list
 
         for month in self.config.month_list:
-            print "\n"
+            #print "\n"
             self.cli.msg("Start: " + month)
             zip_name = self.config.log_prefix + month + ".csv.zip"
             zip_file = os.path.join(self.config.tmp_dir,zip_name)
@@ -124,6 +125,8 @@ class AWS_Raw_Bill(object):
             if self.config.remove == "yes":
                 self.cli.msg("Remove: " + zip_file)
                 os.remove(zip_file)
+
+        print "\n"
 
 
 def main():

@@ -559,7 +559,7 @@ class AWS_Calc_Bill(object):
         name = self.config.cal_prefix + month + ".csv"
 
         if self.check_estimated(data=data):
-            name = "estimated-" + month + ".csv"
+            name = self.config.estimated_prefix + month + ".csv"
 
         file = os.path.join(self.config.cal_dir, name)
         self.cli.msg("Save as: " + file)
@@ -643,11 +643,12 @@ class AWS_Calc_Bill(object):
         """
 
         month_list = self.config.month_list
-        print month_list
+        self.cli.msg("CALC_BILL: ")
+        print self.config.month_list
         if len(month_list) > 0:
             for month in month_list:
 
-                print "\n"
+                #print "\n"
                 self.cli.msg("Start: " + month)
 
                 try:
@@ -671,6 +672,9 @@ class AWS_Calc_Bill(object):
                     traceback.print_exc()
 
                 self.cli.msg("Finish: " + month)
+
+
+        print "\n"
 
 
 def main():

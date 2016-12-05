@@ -36,6 +36,8 @@ class AWS_Bill_Tag(object):
         :return:
         """
 
+
+        self.cli.msg("TAG_BILL: ")
         print self.config.month_list
         month_list = self.config.month_list
         if len(month_list) > 0:
@@ -45,7 +47,7 @@ class AWS_Bill_Tag(object):
             self.cli.msg("Read: " + tag_file)
             tags_pools = pandas.read_csv(tag_file, dtype = object, low_memory=False)
             for month in month_list:
-                print "\n"
+                #print "\n"
                 self.cli.msg("Start: " + month)
                 try:
                     """
@@ -74,6 +76,7 @@ class AWS_Bill_Tag(object):
                         index += 1
 
                     if len(tags_data.index) > 0:
+                        self.cli.msg("Merge cost tags: " + bill_key)
                         month_data = pandas.merge(left=tags_data, right=tags_pools, how="left", \
                                                 on=self.config.cost_tags_join_key)
                         tag_name = self.config.tag_prefix + month + ".csv"
@@ -98,6 +101,7 @@ class AWS_Bill_Tag(object):
                     traceback.print_exc()
 
                 self.cli.msg("Finish: " + month)
+        print "\n"
 
 
 def main():

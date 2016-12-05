@@ -28,6 +28,38 @@ class Config(object):
             return str(year) + "-" + str(month)
 
 
+    def list_months(self):
+        """
+
+        :return:
+        """
+
+        sta_year = int(self.start_month[:4])
+        sta_mon = int(self.start_month[5:])
+
+        end_year = int(self.end_month[:4])
+        end_mon = int(self.end_month[5:])
+        month_list = []
+        if (end_mon <= 12 and sta_year >= 2006 and sta_mon <= 12) and \
+                ((end_year > sta_year) or \
+                         (end_year == sta_year and end_mon >= sta_mon)):
+
+            year = sta_year
+            month = sta_mon
+
+            while True:
+                month_list.append(self.yyyy_mm(year=year, month=month))
+                if year == end_year and month == end_mon:
+                    break
+                else:
+                    if month == 12:
+                        month = 1
+                        year = year + 1
+                    else:
+                        month = month + 1
+
+        return month_list
+
     def get_months(self):
         """
         get month list according to the scope option
@@ -143,6 +175,7 @@ class Config(object):
 
         self.cal_folder = bill_processed["s3_bucket"]["cal_folder"]
         self.cal_prefix = bill_processed["s3_bucket"]["cal_prefix"]
+        self.estimated_prefix = bill_processed["s3_bucket"]["estimated_prefix"]
         self.cal_dir = os.path.join(self.cwd, directories["cal"])
         if (not os.path.exists(self.cal_dir)):
             os.mkdir(self.cal_dir)
@@ -165,7 +198,7 @@ class Config(object):
 
         # cost tags
         self.cost_tags_file = self.yaml_obj.get("cost_tags")["tags_file"]
-        self.cost_start = self.yaml_obj.get("cost_tags")["start_month"]
+        self.start_month = self.cost_start = self.yaml_obj.get("cost_tags")["start_month"]
         self.cost_tags_join_key = self.yaml_obj.get("cost_tags")["join_key"]
 
         # bill columns
@@ -192,8 +225,25 @@ class Config(object):
         # merged bill
         self.merge_file = self.yaml_obj.get("statistics")["merge_file"]
 
-        # AWS platform list
-        self.platform = self.yaml_obj.get("platform")
+        # Redshift config
+        self.redshift_host = self.yaml_obj.get("redshift")["host"]
+        self.redshift_port = self.yaml_obj.get("redshift")["port"]
+        self.redshift_user = self.yaml_obj.get("redshift")["user"]
+        self.redshift_pwd = self.yaml_obj.get("redshift")["passwd"]
+        self.redshift_db = self.yaml_obj.get("redshift")["database"]
+        self.redshift_t_history = self.yaml_obj.get("redshift")["tables"]["history"]
+        self.redshift_t_year = self.yaml_obj.get("redshift")["tables"]["year"]
+        self.redshift_t_month = self.yaml_obj.get("redshift")["tables"]["month"]
+        self.redshift_t_estimated = self.yaml_obj.get("redshift")["tables"]["estimated"]
+        self.redshift_t_tmp = self.yaml_obj.get("redshift")["tables"]["tmp"]
+        self.s3_credentials = self.yaml_obj.get("redshift")["credentials"]
+
+
+
+
+
+
+
 
 
 

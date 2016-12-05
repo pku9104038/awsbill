@@ -12,3 +12,27 @@ source ./pyenv/bin/activate
 pip install boto3
 pip install PyYAML
 pip install pandas
+
+
+# sometimes it will meet problem like
+"""
+raise ValueError, 'unknown locale: %s' % localename
+ValueError: unknown locale: UTF-8
+~> locale
+LANG="en_US.UTF-8"
+LC_COLLATE="en_US.UTF-8"
+LC_CTYPE="UTF-8"
+LC_MESSAGES="en_US.UTF-8"
+LC_MONETARY="en_US.UTF-8"
+LC_NUMERIC="en_US.UTF-8"
+LC_TIME="en_US.UTF-8"
+LC_ALL=
+"""
+
+add follow lines to .profile
+
+Export LC_CTYPE="en_US.UTF-8"
+Export LC_ALL=="en_US.UTF-8"
+
+then run
+locale-gen en_US.UTF-8
