@@ -126,6 +126,31 @@ class AWS_Load_Bill(object):
 
         self.discon_redshfit()
 
+    def delete_estimated_rows(self, table, where):
+
+        self.con_redshfit()
+
+        sql = self.sql_append(key="DELETE FROM", value=table)
+        sql = self.sql_append(sql=sql,key="WHERE", value=table+"."+where)
+        sql = self.sql_end(sql=sql)
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        old_isolation_level = self.conn.isolation_level
+        self.conn.set_isolation_level(0)
+
+        sql = self.sql_append(key="VACUUM FULL", value=table)
+        sql = self.sql_end(sql=sql)
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        self.conn.set_isolation_level(old_isolation_level)
+
+        self.discon_redshfit()
 
     def check_new_calc_bill(self):
         """
@@ -165,13 +190,13 @@ class AWS_Load_Bill(object):
 
             object = self.s3_resource.Object(self.config.proc_bucket,\
                                              estimated_bill)
-            #self.cli.msg("Delete: "+estimated_bill)
+            self.cli.msg("Delete Estimated CSV: "+estimated_bill)
             object.delete()
             #self.cli.msg("Delete: " + self.config.redshift_t_month)
-            self.table_del(table=self.config.redshift_t_month)
+            #self.table_del(table=self.config.redshift_t_month)
             #self.cli.msg("Copy into Redshift: " + calc_bill)
-            self.table_copy(table=self.config.redshift_t_month,\
-                            s3key=calc_bill)
+            #self.table_copy(table=self.config.redshift_t_month,\
+            #                s3key=calc_bill)
             self.table_copy(table=self.config.redshift_t_history,\
                             s3key=calc_bill)
 
@@ -184,6 +209,12 @@ class AWS_Load_Bill(object):
                             s3key="s3://"+self.config.proc_bucket+"/"+ \
                                   self.config.cal_folder+self.config.estimated_prefix)
 
+        self.delete_estimated_rows(table=self.config.redshift_t_history,\
+                                   where="invoiceid='Estimated'")
+
+        self.table_copy(table=self.config.redshift_t_history, \
+                        s3key="s3://" + self.config.proc_bucket + "/" + \
+                              self.config.cal_folder + self.config.estimated_prefix)
         #print "\n"
 
 
