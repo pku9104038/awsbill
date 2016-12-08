@@ -41,11 +41,18 @@ class AWS_Calc_Bill(object):
         :param row:
         :return:
         """
+        """
         index =  str(row["RecordId"]) + "-" + str(row["SubscriptionId"]) + "-" +\
                 str(row["RateId"]) +"-" + str(row["LinkedAccountId"]) + "-" + \
                str(row["InvoiceID"])
+        """
 
-        return hashlib.sha512(index).hexdigest()
+        #index = str(row)
+        index = str(row["RecordId"])
+        hash =  hashlib.sha512(index).hexdigest()
+        return hash[:8]
+
+        #return hashlib.md5(str(row["RecordId"])).hexdigest()
 
 
     def set_index_of_records(self,data):
@@ -54,7 +61,7 @@ class AWS_Calc_Bill(object):
         :param data:
         :return:
         """
-
+        """
         null_recordid = data[data.RecordId.isnull()]
         index = null_recordid.index
         for i in index:
@@ -65,6 +72,9 @@ class AWS_Calc_Bill(object):
         for i in index:
             data["SubscriptionId"][i] = data["RateId"][i]  # use rate id as record id
 
+
+        """
+        self.cli.msg("Hash index......")
         data["index"] = data.apply(self.set_index, axis=1)
 
 
@@ -421,19 +431,35 @@ class AWS_Calc_Bill(object):
         latest_start = this_month["UsageStartDate"].max()
         start_datetime = datetime.datetime.strptime(latest_start, \
                                                    "%Y-%m-%d %H:%M:%S")
+        month = latest_start[:7]
+        print month
+
         onehour = datetime.timedelta(hours=1)
-        end_datetime = start_datetime + onehour
+        stop_datetime = start_datetime + onehour
 
 
         VAT = data[data.ItemDescription == "税金 VAT 类型"]
-        vat_end_date = VAT["UsageEndDate"].max()
-        end_of_month = datetime.datetime.strptime(vat_end_date, \
+
+        vat_start_date = VAT["UsageStartDate"].min()
+        start_datetime = datetime.datetime.strptime(vat_start_date, \
                                                   "%Y-%m-%d %H:%M:%S")
-        left_datetime = end_of_month - end_datetime
+
+        vat_end_date = VAT["UsageEndDate"].max()
+        end_datetime = datetime.datetime.strptime(vat_end_date, \
+                                                  "%Y-%m-%d %H:%M:%S")
+        onesecond = datetime.timedelta(seconds=1)
+        end_datetime = end_datetime + onesecond
+
+
+        left_datetime = end_datetime - stop_datetime
         hours = left_datetime.seconds / 60 / 60 + left_datetime.days * 24
         if hours > 0:
-            self.cli.msg("Bill Time " + str(end_datetime))
+            self.cli.msg("Bill Time " + str(stop_datetime))
             self.cli.msg( "[ "+ str(hours) + " ] hours to the end of this month")
+
+        return str(start_datetime), str(end_datetime), str(stop_datetime), month
+
+
 
 
     def startstamp(self, row):
@@ -576,7 +602,7 @@ class AWS_Calc_Bill(object):
             self.cli.msg("Remove: " + file)
             os.remove(file)
 
-        self.get_bill_date(data)
+        #self.get_bill_date(data)
 
     def cal_bill(self, data, tags_data):
         """
@@ -627,11 +653,27 @@ class AWS_Calc_Bill(object):
         index = null_data.index
         calc_data["TotalCost"][index] = 0
 
-        self.cli.msg("Set Primary Index......")
-        self.set_index_of_records(calc_data)
+
+
+        # set bill start, end, stop time
+        self.cli.msg("Bill time......")
+        start_time, end_time, stop_time, bill_month = self.get_bill_date(data=calc_data)
+        #print start_time, end_time, stop_time
+        calc_data.loc[:, "BillStart"] = start_time
+        calc_data.loc[:, "BillTerminate"] = end_time
+        calc_data.loc[:, "BillStop"] = stop_time
+        calc_data.loc[:, "BillCycle"] = bill_month
+
+        # not need in redshift for a index
+        #self.cli.msg("Set Primary Index......")
+        #self.set_index_of_records(calc_data)
 
         cols = self.config.calc_columns
         calc_data = calc_data[cols]
+
+        #print calc_data["BillStartTime"].max(),calc_data["BillStartTime"].min()
+        #print calc_data["BillEndTime"].max(),calc_data["BillEndTime"].min()
+        #print calc_data["BillStopTime"].max(),calc_data["BillStopTime"].min()
 
         return calc_data
 

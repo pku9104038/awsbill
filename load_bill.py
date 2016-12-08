@@ -207,7 +207,9 @@ class AWS_Load_Bill(object):
         #self.cli.msg("Copy : estimated bills")
         self.table_copy(table=self.config.redshift_t_estimated, \
                             s3key="s3://"+self.config.proc_bucket+"/"+ \
-                                  self.config.cal_folder+self.config.estimated_prefix)
+                                  self.config.cal_folder+self.config.estimated_prefix \
+                         #+"2016-12.csv"\
+                        )
 
         self.delete_estimated_rows(table=self.config.redshift_t_history,\
                                    where="invoiceid='Estimated'")
