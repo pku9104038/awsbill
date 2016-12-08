@@ -21,7 +21,7 @@ class Options(object):
         self.config_yaml = "config2.yaml"
         self.environment = "s3"
         self.end_month = ""
-        self.remove = "no"
+        self.remove = "yes"
 
 
 
