@@ -656,9 +656,10 @@ class AWS_Calc_Bill(object):
 
 
         # set bill start, end, stop time
-        self.cli.msg("Bill time......")
+
         start_time, end_time, stop_time, bill_month = self.get_bill_date(data=calc_data)
         #print start_time, end_time, stop_time
+        self.cli.msg("BillStop: "+stop_time)
         calc_data.loc[:, "BillStart"] = start_time
         calc_data.loc[:, "BillTerminate"] = end_time
         calc_data.loc[:, "BillStop"] = stop_time

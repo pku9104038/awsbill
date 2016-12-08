@@ -6,6 +6,8 @@ import time
 
 import json
 
+import cal_bill as calc
+
 def main():
     """
     main function for this script
@@ -21,10 +23,12 @@ def main():
 
     config = cfg.Config(cli.option)
 
+    calc_bill = calc.AWS_Calc_Bill(config=config, commandline=cli)
 
-    print json.dumps(config.month_list, indent=4)
-    cli.msg(json.dumps(config.month_list, indent=4))
-    cli.msg("".join(config.month_list))
+
+
+
+
 
 
 if __name__ == '__main__':

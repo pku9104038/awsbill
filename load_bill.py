@@ -78,9 +78,6 @@ class AWS_Load_Bill(object):
 
         self.conn.commit()
 
-        #result = self.cur.fetchall()
-        #print result
-
         self.discon_redshfit()
 
 
@@ -175,6 +172,39 @@ class AWS_Load_Bill(object):
 
         return None, None
 
+    def check_month_calc_bill(self,month):
+        """
+
+        :param
+        :return:
+        """
+
+        estimated = None
+        calc = None
+        bucket = self.s3_resource.Bucket(self.config.proc_bucket)
+
+        key = self.config.cal_folder + \
+                        self.config.estimated_prefix + \
+                        month + ".csv"
+        obj = list(bucket.objects.filter(Prefix=key))
+        if len(obj) > 0 and obj[0].key == key:
+            estimated = key
+
+        key = self.config.cal_folder + \
+                  self.config.cal_prefix + \
+                  month + ".csv"
+        obj = list(bucket.objects.filter(Prefix=key))
+        if len(obj) > 0 and obj[0].key == key:
+            calc = key
+
+        if calc != None:
+            if estimated != None:
+                (self.s3_resource.Object(self.config.proc_bucket, \
+                                         estimated)).delete()
+                estimated = None
+
+        return calc, estimated
+
 
     def load_latest_bills(self):
         """
@@ -220,6 +250,64 @@ class AWS_Load_Bill(object):
         #print "\n"
 
 
+    def load_all_bills(self):
+        """
+
+        :param self:
+        :return:
+        """
+
+        # delete data in estimated table then copy estimated csv into it
+        self.table_del(table=self.config.redshift_t_estimated)
+        self.table_copy(table=self.config.redshift_t_estimated, \
+                        s3key="s3://" + self.config.proc_bucket + "/" + \
+                              self.config.cal_folder + self.config.estimated_prefix \
+                        )
+
+        # delete data in history table then copy all calc/ csv into it
+        self.table_del(table=self.config.redshift_t_history)
+        self.table_copy(table=self.config.redshift_t_history, \
+                        s3key="s3://" + self.config.proc_bucket + "/" + \
+                              self.config.cal_folder)
+
+    def load_month_bill(self,month):
+        """
+
+        :return:
+        """
+        calc, estimated = self.check_month_calc_bill(month=month)
+        if calc != None:
+            self.delete_estimated_rows(table=self.config.redshift_t_history, \
+                               where="billcycle='" + month +"'")
+
+            self.table_copy(table=self.config.redshift_t_history, \
+                            s3key="s3://" + self.config.proc_bucket + "/" +calc)
+
+        if estimated != None:
+            self.delete_estimated_rows(table=self.config.redshift_t_estimated, \
+                                       where="billcycle='" + month + "'")
+            self.table_copy(table=self.config.redshift_t_estimated, \
+                            s3key="s3://" + self.config.proc_bucket + "/" + estimated)
+
+
+            self.delete_estimated_rows(table=self.config.redshift_t_history, \
+                                       where="billcycle='" + month + "'")
+            self.table_copy(table=self.config.redshift_t_history, \
+                s3key="s3://" + self.config.proc_bucket + "/" + estimated)
+
+
+    def load_bills(self):
+
+        if self.config.scope == "all":
+            print "load all"
+            self.load_all_bills()
+        elif self.config.scope == "latest" or self.config.scope == "last":
+            print "load latest"
+            self.load_latest_bills()
+        else:
+            print "load "+self.config.scope
+            self.load_month_bill(self.config.scope)
+
 
 
 def main():
@@ -247,7 +335,8 @@ def main():
     #aws_load_bill.table_copy(table=table, s3key=s3key, credentials=config.s3_credentials)
     #aws_load_bill.table_del(table=table)
     #aws_load_bill.table_vacuum(table=table)
-    aws_load_bill.load_latest_bills()
+
+    aws_load_bill.load_bills()
 
     #print "\n"
     aws_load_bill.cli.msg("You got it !  Cheers!")
