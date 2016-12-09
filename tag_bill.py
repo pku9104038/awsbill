@@ -29,6 +29,30 @@ class AWS_Bill_Tag(object):
         self.s3_resource = config.s3_resource
         self.cli = commandline
 
+    def read_cost_tags(self):
+        """
+
+        :return:
+        """
+
+        # download  file
+        file = self.config.cost_tags_file
+        key = self.config.tag_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        filepath = os.path.join(self.config.tag_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(filepath)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + filepath)
+        data = pandas.read_csv(filepath, \
+                               dtype=object, \
+                               low_memory=False)
+
+
+        return data
 
     def tags_bills(self):
         """
@@ -44,10 +68,12 @@ class AWS_Bill_Tag(object):
         month_list = self.config.month_list
         if len(month_list) > 0:
             # read cost tags file into pandas dataframe
-            tag_file = os.path.join(self.config.tag_dir,
-                                    self.config.cost_tags_file)
-            self.cli.msg("Read: " + tag_file)
-            tags_pools = pandas.read_csv(tag_file, dtype = object, low_memory=False)
+            #tag_file = os.path.join(self.config.tag_dir,
+            #                       self.config.cost_tags_file)
+            #self.cli.msg("Read: " + tag_file)
+            #tags_pools = pandas.read_csv(tag_file, dtype = object, low_memory=False)
+            tags_pools = self.read_cost_tags()
+
             for month in month_list:
                 #print "\n"
                 self.cli.msg("Start: " + month)
