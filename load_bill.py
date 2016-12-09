@@ -295,18 +295,34 @@ class AWS_Load_Bill(object):
             self.table_copy(table=self.config.redshift_t_history, \
                 s3key="s3://" + self.config.proc_bucket + "/" + estimated)
 
+    def update_bill_datetime(self):
+
+        self.con_redshfit()
+
+        sql = "delete bill_datetime;"
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        sql = "insert into bill_datetime select payeraccountid, billstop \
+                from history_bill where billstop = (select max(billstop) from history_bill ) limit 1;"
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        self.discon_redshfit()
 
     def load_bills(self):
 
         if self.config.scope == "all":
-            print "load all"
             self.load_all_bills()
         elif self.config.scope == "latest" or self.config.scope == "last":
-            print "load latest"
             self.load_latest_bills()
         else:
-            print "load "+self.config.scope
             self.load_month_bill(self.config.scope)
+
+        self.update_bill_datetime()
 
 
 
