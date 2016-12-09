@@ -62,7 +62,7 @@ class AWS_Trace_Bill(object):
         bill_data = pandas.read_csv(bill_file, dtype = object, low_memory=False)
 
         if self.config.remove == "yes":
-            self.cli.msg("Remove: " + file)
+            self.cli.msg("Remove: " + bill_file)
             os.remove(bill_file)
 
         return bill_data
