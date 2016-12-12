@@ -249,6 +249,8 @@ class AWS_Load_Bill(object):
                               self.config.cal_folder + self.config.estimated_prefix)
         #print "\n"
 
+        self.update_bill_datetime()
+
 
     def load_all_bills(self):
         """
@@ -269,6 +271,8 @@ class AWS_Load_Bill(object):
         self.table_copy(table=self.config.redshift_t_history, \
                         s3key="s3://" + self.config.proc_bucket + "/" + \
                               self.config.cal_folder)
+
+        self.update_bill_datetime()
 
     def load_month_bill(self,month):
         """
@@ -294,6 +298,8 @@ class AWS_Load_Bill(object):
                                        where="billcycle='" + month + "'")
             self.table_copy(table=self.config.redshift_t_history, \
                 s3key="s3://" + self.config.proc_bucket + "/" + estimated)
+
+        self.update_bill_datetime()
 
     def update_bill_datetime(self):
 
