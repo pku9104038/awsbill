@@ -205,6 +205,27 @@ class AWS_Load_Bill(object):
 
         return calc, estimated
 
+    def update_bill_datetime(self):
+
+        #self.con_redshfit()
+
+        #sql = "delete bill_datetime;"
+        #self.cli.msg(sql)
+        #self.cur.execute(sql)
+        #self.conn.commit()
+
+        self.table_del(table="bill_datetime")
+
+        self.con_redshfit()
+
+        sql = "insert into bill_datetime select payeraccountid, billstop \
+                from history_bill where billstop = (select max(billstop) from history_bill ) limit 1;"
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        self.discon_redshfit()
 
     def load_latest_bills(self):
         """
@@ -301,25 +322,7 @@ class AWS_Load_Bill(object):
 
         self.update_bill_datetime()
 
-    def update_bill_datetime(self):
 
-        self.con_redshfit()
-
-        sql = "delete bill_datetime;"
-        self.cli.msg(sql)
-        self.cur.execute(sql)
-        self.conn.commit()
-
-        self.table_vacuum(table="bill_datetime")
-
-        sql = "insert into bill_datetime select payeraccountid, billstop \
-                from history_bill where billstop = (select max(billstop) from history_bill ) limit 1;"
-
-        self.cli.msg(sql)
-        self.cur.execute(sql)
-        self.conn.commit()
-
-        self.discon_redshfit()
 
     def load_bills(self):
 
