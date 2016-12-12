@@ -7,6 +7,7 @@ import time
 import json
 
 import cal_bill as calc
+import tag_bill as tag
 
 def main():
     """
@@ -23,8 +24,9 @@ def main():
 
     config = cfg.Config(cli.option)
 
-    calc_bill = calc.AWS_Calc_Bill(config=config, commandline=cli)
 
+    aws_tag = tag.AWS_Bill_Tag(config=config,commandline=cli)
+    aws_tag.merge_tags_datas(month="2016-09")
 
 
 

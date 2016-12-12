@@ -54,6 +54,59 @@ class AWS_Bill_Tag(object):
 
         return data
 
+    def read_cost_tags_month(self,month):
+        """
+
+        :return:
+        """
+
+        # download  file
+        file = self.config.tag_prefix+month+".csv"
+        key = self.config.tag_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        filepath = os.path.join(self.config.tag_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(filepath)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + filepath)
+        data = pandas.read_csv(filepath, \
+                               dtype=object, \
+                               low_memory=False)
+
+        return data
+
+    def merge_tags_datas(self,month):
+        """
+
+        :param month:
+        :return:
+        """
+        month_tags = self.read_cost_tags_month(month=month)
+        print month
+        print month_tags
+        month_tags["index"] = month_tags["user:Project"]
+        month_data = month_tags.set_index(keys="index")
+
+        cost_tags = self.read_cost_tags()
+        cost_tags["index"] = cost_tags["user:Project"]
+
+        cost_data = cost_tags.set_index(keys="index")
+        print "\n cost"
+
+        print cost_tags
+
+        #merged_tags = pandas.merge(left=month_tags, right=cost_tags, how="outer", \
+        #                      on=self.config.cost_tags_join_key)
+        print "\n merge"
+
+        #merged_tags = pandas.concat([month_data, cost_data], axis=1)
+        merged_tags = month_data.append(cost_data)
+        print merged_tags
+
+
     def tags_bills(self):
         """
 

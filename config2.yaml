@@ -153,3 +153,4 @@ redshift:
     month: "month_bill"
     estimated: "estimated_bill"
     tmp: "tmp_bill"
+    datetime: "bill_datetime"

@@ -304,6 +304,8 @@ class AWS_Load_Bill(object):
         self.cur.execute(sql)
         self.conn.commit()
 
+        self.table_vacuum(table="bill_datetime")
+
         sql = "insert into bill_datetime select payeraccountid, billstop \
                 from history_bill where billstop = (select max(billstop) from history_bill ) limit 1;"
 
