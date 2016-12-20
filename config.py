@@ -182,6 +182,7 @@ class Config(object):
 
         self.stat_folder = bill_processed["s3_bucket"]["stat_folder"]
         self.stat_prefix = bill_processed["s3_bucket"]["stat_prefix"]
+        self.instances_prefix = bill_processed["s3_bucket"]["instances_prefix"]
         self.stat_dir = os.path.join(self.cwd, directories["stat"])
         if (not os.path.exists(self.stat_dir)):
             os.mkdir(self.stat_dir)

@@ -23,6 +23,7 @@ bill_processed:
     estimated_prefix: estimated-
     stat_folder: stat/
     stat_prefix: stat-
+    instances_prefix: instances-
 
 # local directory
 directories:

@@ -8,6 +8,7 @@ import json
 
 import cal_bill as calc
 import tag_bill as tag
+import load_bill as load
 
 def main():
     """
@@ -25,11 +26,12 @@ def main():
     config = cfg.Config(cli.option)
 
 
-    aws_tag = tag.AWS_Bill_Tag(config=config,commandline=cli)
-    aws_tag.merge_tags_datas(month="2016-09")
+    #aws_tag = tag.AWS_Bill_Tag(config=config,commandline=cli)
+    #aws_tag.merge_tags_datas(month="2016-09")
 
 
-
+    aws_load = load.AWS_Load_Bill(config=config,commandline=cli)
+    aws_load.update_bill_datetime()
 
 
 

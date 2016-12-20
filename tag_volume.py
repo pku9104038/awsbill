@@ -13,7 +13,7 @@ class AWS_Tag_Volume(object):
         self.cli = commandline
 
         self.session = config.session
-        self.session = boto3.Session(profile_name="dianda-s")
+        self.session = boto3.Session(profile_name="dianda")
         self.ec2_client = self.session.client("ec2")
         self.ec2_resource = self.session.resource('ec2')
 
@@ -65,12 +65,12 @@ class AWS_Tag_Volume(object):
 def main():
     commandline = cli.CommandLine()
     commandline.get_options()
-    commandline.set_options(profile="dianda-s")
+    commandline.set_options(profile="dianda")
     config = cfg.Config(commandline.option)
 
     aws_tag_volume = AWS_Tag_Volume(config=config,commandline=commandline)
 
-    aws_tag_volume.tag_volumes(profile="dianda-s")
+    aws_tag_volume.tag_volumes(profile="dianda")
     aws_tag_volume.tag_volumes(profile="bill")
 
     """
