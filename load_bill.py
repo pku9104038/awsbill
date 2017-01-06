@@ -249,7 +249,8 @@ class AWS_Load_Bill(object):
             #self.table_copy(table=self.config.redshift_t_month,\
             #                s3key=calc_bill)
             self.table_copy(table=self.config.redshift_t_history,\
-                            s3key=calc_bill)
+                            s3key="s3://"+self.config.proc_bucket+"/"+ \
+                                  calc_bill)
 
 
         #self.cli.msg("Delete: " + self.config.redshift_t_estimated)
