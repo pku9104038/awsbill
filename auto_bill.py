@@ -62,7 +62,7 @@ class AWS_Auto_Bill(object):
         """
 
         bucket = self.s3_resource.Bucket(self.config.proc_bucket)
-        key = self.config.cal_folder+self.config.cal_prefix + month + ".csv.zip"
+        key = self.config.cal_folder+self.config.cal_prefix + month + ".csv"
         objs = list(bucket.objects.filter(Prefix=key))
 
         if len(objs) > 0 and objs[0].key == key:
