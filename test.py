@@ -30,8 +30,12 @@ def main():
     #aws_tag.merge_tags_datas(month="2016-09")
 
 
-    aws_load = load.AWS_Load_Bill(config=config,commandline=cli)
-    aws_load.update_bill_datetime()
+    aws = load.AWS_Load_Bill(config=config,commandline=cli)
+
+
+    calc_bill, estimated_bill = aws.check_new_calc_bill()
+
+    print calc_bill, estimated_bill
 
 
 
