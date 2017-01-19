@@ -149,6 +149,34 @@ class AWS_Load_Bill(object):
 
         self.discon_redshfit()
 
+    def delete_month_rows(self, table, month):
+
+        where = "billcycle = '" + month +"'"
+
+        self.con_redshfit()
+
+        sql = self.sql_append(key="DELETE FROM", value=table)
+        sql = self.sql_append(sql=sql, key="WHERE", value=table + "." + where)
+        sql = self.sql_end(sql=sql)
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        old_isolation_level = self.conn.isolation_level
+        self.conn.set_isolation_level(0)
+
+        sql = self.sql_append(key="VACUUM FULL", value=table)
+        sql = self.sql_end(sql=sql)
+
+        self.cli.msg(sql)
+        self.cur.execute(sql)
+        self.conn.commit()
+
+        self.conn.set_isolation_level(old_isolation_level)
+
+        self.discon_redshfit()
+
     def check_new_calc_bill(self):
         """
 
@@ -354,17 +382,16 @@ def main():
     # init AWS_Access instance
     aws_load_bill = AWS_Load_Bill(config=config, commandline = cli)
 
-    table = "tmp_bill"
-    s3key = "s3://" + \
-            config.proc_bucket + "/" + \
-            config.cal_folder + \
-            config.estimated_prefix
+    month = config.end_month
+    aws_load_bill.delete_month_rows(table=aws_load_bill.config.redshift_t_history, \
+                               month=month)
 
-    #aws_load_bill.table_copy(table=table, s3key=s3key, credentials=config.s3_credentials)
-    #aws_load_bill.table_del(table=table)
-    #aws_load_bill.table_vacuum(table=table)
+    aws_load_bill.table_copy(table=aws_load_bill.config.redshift_t_history, \
+                s3key="s3://" + aws_load_bill.config.proc_bucket + "/" + \
+                      aws_load_bill.config.cal_folder + \
+                      aws_load_bill.config.cal_prefix +month)
 
-    aws_load_bill.load_bills()
+
 
     #print "\n"
     aws_load_bill.cli.msg("You got it !  Cheers!")
