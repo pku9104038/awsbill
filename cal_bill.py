@@ -570,7 +570,7 @@ class AWS_Calc_Bill(object):
 
         # add null AdjustedCost column
         self.cli.msg("Add default [AdjustedCost]......")
-        calc_data["AdjustedCost"] = calc_data.apply(self.default_adjust_cost, axis=1)
+        calc_data["AdjustedCost"] = calc_data["UnBlendedCost"]
 
         # adjust rds ri cost
         self.cli.msg("Adjust ReservedInstance Cost......")
