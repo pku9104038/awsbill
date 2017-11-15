@@ -351,8 +351,8 @@ class AWS_Calc_Bill(object):
                         # set AdjustedCost according to index
                         ripo_index = ripo.index
                         usage_index = usage.index
-                        for idx in usage_index:
-                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * rate
+                        #for idx in usage_index:
+                        (data["AdjustedCost"])[usage_index] = (data["UnBlendedCost"])[usage_index] * rate
 
                         (data["AdjustedCost"])[ripo_index] = null_rate
 
