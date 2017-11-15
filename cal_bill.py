@@ -245,7 +245,7 @@ class AWS_Calc_Bill(object):
 
             # set InstanceType , Platform
             index = group.index
-            data["InstanceType"][index] = usage_type #instance_type
+            data["InstanceType"][index] = instance_type
             data["Platform"][index] = platform
 
 
@@ -319,18 +319,47 @@ class AWS_Calc_Bill(object):
         :return:
         """
 
-        grouped = data.groupby(["ProductName","Platform"]) #,"InstanceType"
+        grouped = data.groupby(["ProductName","Platform","InstanceType"]) #
 
         for name, group in grouped:
             product = name[0]
 
             # check product
-            #if product == "Amazon RDS Service" \
+            # if product == "Amazon RDS Service" \
             #    or product == "Amazon ElastiCache" \
             #    or product == "Amazon Elastic Compute Cloud" \
             #    or product == "Amazon Relational Database Service" \
             #    or product == "Amazon Redshift":
-            if True:
+
+            if product == "Amazon RDS Service" \
+                or product == "Amazon Relational Database Service":\
+
+                # check ri purchase order
+                ripo = group[(group.ResourceId.isnull())]  # & (group.ReservedInstance == "Y")
+                usage = group[~(group.ResourceId.isnull())]  # | (group.ReservedInstance == "N")]
+
+                # if ri purchaseed
+                if len(ripo.index) > 0:
+                    # total cost
+                    cost = group["UnBlendedCost"].sum()
+                    ri_cost = ripo["UnBlendedCost"].sum()
+                    usage_cost = usage["UnBlendedCost"].sum()
+                    usage_count = usage["UnBlendedCost"].count()
+
+                    # average cost
+                    if ri_cost > 0 and usage_count > 0:
+                        rate = cost / usage_count
+                        null_rate = 0
+
+                        # set AdjustedCost according to index
+                        ripo_index = ripo.index
+                        usage_index = usage.index
+                        # for idx in usage_index:
+                        (data["AdjustedCost"])[usage_index] = rate
+
+                        (data["AdjustedCost"])[ripo_index] = null_rate
+
+            else:
                 # check ri purchase order
                 ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
                 usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
