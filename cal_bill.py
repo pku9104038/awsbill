@@ -577,7 +577,9 @@ class AWS_Calc_Bill(object):
         self.adjust_ri_cost(data = calc_data)
 
         self.cli.msg("Calc TotalCost......")
+
         df_null = calc_data[(calc_data['user:Project'].isnull())]
+        df_prj =  calc_data[~(calc_data['user:Project'].isnull())]
         sum_total = calc_data["AdjustedCost"].sum()
         sum_null = df_null["AdjustedCost"].sum()
         if sum_null == 0:
@@ -585,12 +587,10 @@ class AWS_Calc_Bill(object):
         else:
             null_rate = sum_total / (sum_total - sum_null)
 
-        calc_data.loc[:, 'NullRate'] = null_rate
-        calc_data["TotalCost"] = calc_data.AdjustedCost * calc_data.NullRate
-        null_data = calc_data[(calc_data["user:Project"]).isnull()]
-        index = null_data.index
-        calc_data["TotalCost"][index] = 0
-
+        idx_prj  = df_prj.index
+        idx_null =  df_null.index
+        (calc_data["TotalCost"])[idx_prj] = (calc_data["AdjustedCost"])[idx_prj] * null_rate
+        (calc_data["TotalCost"])[idx_null] = 0
 
 
         # set bill start, end, stop time
