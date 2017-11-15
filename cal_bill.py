@@ -324,12 +324,14 @@ class AWS_Calc_Bill(object):
         for name, group in grouped:
             product = name[0]
 
-            # RDS
-            if product == "Amazon RDS Service":
+            # check product
+            if product == "Amazon RDS Service" \
+                or product == "Amazon ElastiCache" \
+                or product == "Amazon Elastic Compute Cloud" \
+                or product == "Amazon Relational Database Service":
                 # check ri purchase order
-                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
-                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
-                ri_usage = usage[usage["ReservedInstance"] == "Y"]
+                ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
+                usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
 
                 # if ri purchaseed
                 if len(ripo.index) > 0:
@@ -338,91 +340,47 @@ class AWS_Calc_Bill(object):
                     ri_cost = ripo["UnBlendedCost"].sum()
                     usage_cost = usage["UnBlendedCost"].sum()
 
-                    # usage hours
-                    hours = usage["UsageQuantity"].sum()
-                    # ri hours
-                    ri_hours = ripo["UsageQuantity"].sum()
-                    # ri hours
-                    ri_usage_hours = ri_usage["UsageQuantity"].sum()
 
                     # average cost
-                    if hours > 0:
-                        if ri_hours > ri_usage_hours: # not all ri used
-                            rate = ((ri_usage_hours/ri_hours) * ri_cost + usage_cost) / hours
-                            null_rate = (ri_hours - ri_usage_hours) / ri_hours
-                        else:
-                            rate = cost / hours
-                            null_rate = 0
+                    if ri_cost > 0:
+                        rate = cost/usage_cost
+                        null_rate = 0
 
                         # set AdjustedCost according to index
                         ripo_index = ripo.index
                         usage_index = usage.index
-                        (data["AdjustedCost"])[usage_index] = rate
-                        for idx in ripo_index:
-                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
+                        for idx in usage_index:
+                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * rate
 
-            # EC2
-            elif product == "Amazon Elastic Compute Cloud":
+                        (data["AdjustedCost"])[ripo_index] = null_rate
+
+            elif product == "Amazon Redshift":
                 # check ri purchase order
-                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
-                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
-
-                # if ri purchaseed
-                if len(ripo.index) > 0:
-                    # used cost
-                    usage_cost = usage["UnBlendedCost"].sum()
-
-                    # usage hours
-                    hours = usage["UsageQuantity"].sum()
-
-                    # average cost
-                    if hours > 0:
-                        rate = usage_cost / hours
-                        # set AdjustedCost according to index
-                        usage_index = usage.index
-                        (data["AdjustedCost"])[usage_index] = rate
-
-            # ElastiCache
-            elif product == "Amazon ElastiCache":
-
-                # RI with up front payment
-                # this sign up payment record could not tag to any project
-                # keep it as null and share cost by all projects
-
-                # check ri purchase order
-                ripo = group[(group.ResourceId.isnull()) & (group.ReservedInstance == "Y")]
-                usage = group[~(group.ResourceId.isnull()) | (group.ReservedInstance == "N")]
-                ri_usage = usage[usage["ReservedInstance"] == "Y"]
+                ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
+                usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
 
                 # if ri purchaseed
                 if len(ripo.index) > 0:
                     # total cost
-                    cost = group["UnBlendedCost"].sum()
-                    ri_cost = ripo["UnBlendedCost"].sum()
-                    usage_cost = usage["UnBlendedCost"].sum()
+                    cost = group["BlendedCost"].sum()
+                    ri_cost = ripo["BlendedCost"].sum()
+                    usage_cost = usage["BlendedCost"].sum()
 
-                    # usage hours
-                    hours = usage["UsageQuantity"].sum()
-                    # ri hours
-                    ri_hours = ripo["UsageQuantity"].sum()
-                    # ri hours
-                    ri_usage_hours = ri_usage["UsageQuantity"].sum()
 
                     # average cost
-                    if hours > 0:
-                        if ri_hours > ri_usage_hours:  # not all ri used
-                            rate = ((ri_usage_hours / ri_hours) * ri_cost + usage_cost) / hours
-                            null_rate = (ri_hours - ri_usage_hours) / ri_hours
-                        else:
-                            rate = cost / hours
-                            null_rate = 0
+                    if ri_cost > 0:
+                        rate = cost/usage_cost
+                        null_rate = 0
 
                         # set AdjustedCost according to index
                         ripo_index = ripo.index
                         usage_index = usage.index
-                        (data["AdjustedCost"])[usage_index] = rate
-                        for idx in ripo_index:
-                            data["AdjustedCost"][idx] = data["UnBlendedCost"][idx] * null_rate
+                        for idx in usage_index:
+                            data["AdjustedCost"][idx] = data["BlendedCost"][idx] * rate
+
+                        (data["AdjustedCost"])[ripo_index] = null_rate
+
+
 
 
     def get_bill_date(self,data):
