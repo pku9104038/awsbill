@@ -325,11 +325,12 @@ class AWS_Calc_Bill(object):
             product = name[0]
 
             # check product
-            if product == "Amazon RDS Service" \
-                or product == "Amazon ElastiCache" \
-                or product == "Amazon Elastic Compute Cloud" \
-                or product == "Amazon Relational Database Service" \
-                or product == "Amazon Redshift":
+            #if product == "Amazon RDS Service" \
+            #    or product == "Amazon ElastiCache" \
+            #    or product == "Amazon Elastic Compute Cloud" \
+            #    or product == "Amazon Relational Database Service" \
+            #    or product == "Amazon Redshift":
+            if True:
                 # check ri purchase order
                 ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
                 usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
@@ -355,7 +356,7 @@ class AWS_Calc_Bill(object):
 
                         (data["AdjustedCost"])[ripo_index] = null_rate
 
-            
+
 
     def get_bill_date(self,data):
         """
