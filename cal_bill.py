@@ -588,9 +588,9 @@ class AWS_Calc_Bill(object):
             null_rate = sum_total / (sum_total - sum_null)
 
         idx_prj  = df_prj.index
-        idx_null =  df_null.index
+        calc_data["TotalCost"] = 0
         (calc_data["TotalCost"])[idx_prj] = (calc_data["AdjustedCost"])[idx_prj] * null_rate
-        (calc_data["TotalCost"])[idx_null] = 0
+
 
 
         # set bill start, end, stop time
