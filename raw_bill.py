@@ -83,7 +83,7 @@ class AWS_Raw_Bill(object):
                     os.remove(filepath)
 
                 # remove records not 'LineItem'
-                data = data[(data['RecordType'] == 'LineItem')]
+                data = data[(data['RecordType'] == 'LineItem' or data['RecordType'] == 'Rounding')]
 
                 # check columns for lost user tags and add them
                 # tag first two month with ztjy

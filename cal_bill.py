@@ -120,8 +120,8 @@ class AWS_Calc_Bill(object):
                     #platform = "Memcached"
                     platform = "ElastiCache"   # ElastiCache RI could show engine info
                 elif desc.find("Redis") > -1:
-                    #platform = "Redis"
-                    platform = "ElastiCache"
+                    platform = "Redis"
+                    #platform = "ElastiCache"
                 else:
                     platform = "ElastiCache"
 
@@ -180,7 +180,8 @@ class AWS_Calc_Bill(object):
                 platform = "CloudTrail"
 
             # RDS
-            elif product == "Amazon RDS Service":
+            elif product == "Amazon RDS Service" \
+                    or product == "Amazon Relational Database Service":
                 colon = usage_type.find(":")
                 if colon > -1:
                     instance_type = usage_type[colon + len(":"):]
@@ -218,22 +219,20 @@ class AWS_Calc_Bill(object):
                     elif usage_type.find("CloudFront") > -1:
                         instance_type = "CloudFront"
 
-                if desc.find("Linux") > -1:
+                if desc.find("Linux") > -1 or desc.find("linux") > -1:
                     platform = "Linux"
                 elif desc.find("RHEL") > -1:
                     platform = "RHEL"
-                elif desc.find("Windows") > -1:
+                elif desc.find("Windows") > -1 or desc.find("windows") > -1:
                     platform = "Windows"
                 elif desc.find("SQL Std") > -1:
                     platform = "SQL Std"
-                elif desc.find("LoadBalancer") > -1:
+                elif desc.find("LoadBalancer") > -1 or desc.find("load balancer") > -1:
                     platform = "ELB"
                 elif desc.find("Elastic IP") > -1:
                     platform = "EIP"
-                elif desc.find("Elastic IP") > -1:
-                    platform = "EIP"
-                elif desc.find("CloudFront") > -1:
-                    platform = "CloudFront"
+                #elif desc.find("CloudFront") > -1:
+                #    platform = "CloudFront"
                 else:
                     if usage_type.find("EBSOptimized") > -1:
                         platform = "EBSOptimized"
@@ -246,7 +245,7 @@ class AWS_Calc_Bill(object):
 
             # set InstanceType , Platform
             index = group.index
-            data["InstanceType"][index] = instance_type
+            data["InstanceType"][index] = usage_type #instance_type
             data["Platform"][index] = platform
 
 
@@ -264,6 +263,12 @@ class AWS_Calc_Bill(object):
         data["InstanceType"][index] = "Support"
         data["Platform"][index] = "Support"
         data["UsageType"][index] = "Support"
+
+        df = data[data["ItemDescription"] == "由于整合账单和小时行项目计算流程，该行项目包含舍入错误。"]
+        index = df.index
+        data["InstanceType"][index] = "Round"
+        data["Platform"][index] = "Round"
+        data["UsageType"][index] = "Round"
 
     def tag_metric_monitor_usage(self, data):
         """
