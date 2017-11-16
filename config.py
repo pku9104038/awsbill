@@ -202,6 +202,11 @@ class Config(object):
         self.start_month = self.cost_start = self.yaml_obj.get("cost_tags")["start_month"]
         self.cost_tags_join_key = self.yaml_obj.get("cost_tags")["join_key"]
 
+        # resource tags
+        self.resource_tags_file = self.yaml_obj.get("resource_tags")["tags_file"]
+        self.resource_tags_id_key = self.yaml_obj.get("resource_tags")["id_key"]
+        self.resource_tags_prj_key = self.yaml_obj.get("resource_tags")["prj_key"]
+
         # bill columns
         self.raw_columns = self.yaml_obj.get("bill_columns")["raw"]
         self.calc_columns = self.yaml_obj.get("bill_columns")["calc"]

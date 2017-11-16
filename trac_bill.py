@@ -126,6 +126,35 @@ class AWS_Trace_Bill(object):
             self.cli.msg("Remove: " + file)
             os.remove(file)
 
+    def read_resource_tags(self):
+        """
+
+        :param month:
+        :return:
+        """
+
+        # download  file
+        file = self.config.resource_tags_file
+        key = self.config.tag_folder + file
+
+        obj = self.s3_resource.Object(self.config.proc_bucket, key)
+        filepath = os.path.join(self.config.tag_dir, file)
+        if self.config.environment == "s3":
+            self.cli.msg("Download: " + key)
+            obj.download_file(filepath)
+
+        # read bill csv file into pandas dataframe
+        self.cli.msg("Read: " + filepath)
+        data = pandas.read_csv(filepath, \
+                               dtype=object, \
+                               low_memory=False)
+
+        if self.config.remove == "yes":
+            self.cli.msg("Remove: " + filepath)
+            os.remove(filepath)
+
+        return data
+
     def tag_by_resourceid(self, data = None, follow_up_data = None, first_month = True):
         """
 
@@ -133,6 +162,8 @@ class AWS_Trace_Bill(object):
         :return:
         """
 
+        # get resource tags
+        tag_data  = self.read_resource_tags()
 
         # check in this month data
         all_data = data
@@ -143,10 +174,17 @@ class AWS_Trace_Bill(object):
             index = null_data.index
             if len(index) > 0:
                 resource_data = all_data[all_data["ResourceId"] == name]
+                null_data = resource_data[(resource_data["user:Project"].isnull())]
                 project_data = resource_data[~(resource_data["user:Project"].isnull())]
-                if len(project_data.index) > 0:
-                    project = project_data["user:Project"][project_data["user:Project"].first_valid_index()]
-                    data["user:Project"][index] = project
+                if len(null_data.index):
+                    if len(project_data.index) > 0:
+                        project = project_data["user:Project"][project_data["user:Project"].first_valid_index()]
+                        data["user:Project"][index] = project
+                    else:
+                        tag = tag_data[tag_data[self.config.resource_tags_id_key]==name]
+                        if len(tag.index)>0:
+                            project = tag[self.config.resource_tags_prj_key][tag[self.config.resource_tags_prj_key].first_valid_index()]
+                            data["user:Project"][index] = project
 
         if  not first_month: # check it again use follow_up month data
             all_data = follow_up_data

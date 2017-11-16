@@ -49,6 +49,12 @@ cost_tags:
   start_month: 2014-12
   join_key: "user:Project"
 
+# costcenter tags file
+resource_tags:
+  tags_file: resource_tags.csv
+  id_key: ResourceId
+  prj_key: Project
+
 bill_columns:
   user_tags:
     - "user:Bill"
