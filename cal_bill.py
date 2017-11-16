@@ -77,6 +77,48 @@ class AWS_Calc_Bill(object):
         self.cli.msg("Hash index......")
         data["index"] = data.apply(self.set_index, axis=1)
 
+    def get_instance_series_size(self, type):
+        series = ""
+        size  =  ""
+        dot = type.rfind(".")
+        if dot > -1:
+            series = type[: dot]
+            size = type[dot + len("."):]
+        else:
+            series = type
+            size = type
+        return (series,size)
+
+    def get_instance_scale(self,size):
+        scale = 1
+        if size == "micro":
+            scale = 1
+        elif size == "small":
+            scale = 2
+        elif size == "medium":
+            scale = 4
+        elif size == "large":
+            scale =  8
+        elif size == "xlarge":
+            scale = 16
+        elif size == "2xlarge":
+            scale = 32
+        elif size == "4xlarge":
+            scale = 64
+        elif size == "8xlarge":
+            scale =  128
+        elif size == "10xlarge":
+            scale = 160
+        elif size == "16xlarge":
+            scale = 256
+        elif size == "32xlarge":
+            scale = 512
+        elif size == "64xlarge":
+            scale =  1024
+        elif size == "128xlarge":
+            scale =  2048
+
+        return scale
 
     def set_platform_instance_type(self,data):
         """
@@ -89,6 +131,12 @@ class AWS_Calc_Bill(object):
         instance_type = None
         data.loc[:,"InstanceType"] = instance_type
         data.loc[:, "Platform"] = platform
+        instance_series = None
+        instance_size = None
+        instance_scale = 1
+        data.loc[:, "InstanceSeries"] = instance_series
+        data.loc[:, "InstanceSize"] = instance_size
+        data.loc[:, "InstanceScale"] = instance_scale
 
         grouped = data.groupby(["ProductName","UsageType","ItemDescription"])
 
@@ -124,6 +172,7 @@ class AWS_Calc_Bill(object):
                     #platform = "ElastiCache"
                 else:
                     platform = "ElastiCache"
+
 
             # RedShift
             elif product == "Amazon Redshift":
@@ -247,7 +296,11 @@ class AWS_Calc_Bill(object):
             index = group.index
             data["InstanceType"][index] = instance_type
             data["Platform"][index] = platform
-
+            (instance_series, instance_size) = self.get_instance_series_size(type=instance_type)
+            instance_scale = self.get_instance_scale(size=instance_size)
+            data["InstanceSeries"][index] = instance_series
+            data["InstanceSize"][index] = instance_size
+            data["InstanceScale"][index] = instance_scale
 
         # with null items in ProductName, UsageType, ItemDescription
         # can not been grouped
@@ -257,18 +310,27 @@ class AWS_Calc_Bill(object):
         data["InstanceType"][index] = "VAT"
         data["Platform"][index] = "VAT"
         data["UsageType"][index] = "VAT"
+        data["InstanceSeries"][index] = "VAT"
+        data["InstanceSize"][index] = "VAT"
+        data["InstanceScale"][index] = 1
 
         df = data[data["ItemDescription"] == "Recurring Fee"]
         index = df.index
         data["InstanceType"][index] = "Support"
         data["Platform"][index] = "Support"
         data["UsageType"][index] = "Support"
+        data["InstanceSeries"][index] = "Support"
+        data["InstanceSize"][index] = "Support"
+        data["InstanceScale"][index] = 1
 
         df = data[data["ItemDescription"] == "由于整合账单和小时行项目计算流程，该行项目包含舍入错误。"]
         index = df.index
         data["InstanceType"][index] = "Round"
         data["Platform"][index] = "Round"
         data["UsageType"][index] = "Round"
+        data["InstanceSeries"][index] = "Round"
+        data["InstanceSize"][index] = "Round"
+        data["InstanceScale"][index] = 1
 
     def tag_metric_monitor_usage(self, data):
         """
@@ -319,10 +381,41 @@ class AWS_Calc_Bill(object):
         :return:
         """
 
-        grouped = data.groupby(["ProductName","Platform","InstanceType"]) #
+        grouped = data.groupby(["ProductName","Platform","InstanceSeries"]) #
 
         for name, group in grouped:
-            product = name[0]
+            ripo = group[(group.ResourceId.isnull())]  # & (group.ReservedInstance == "Y")
+            usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
+            
+            if len(usage.index) > 0:
+                cost = group["UnBlendedCost"].sum()
+                usage_scale = usage["InstanceScale"].sum()
+                usage_rate = cost/usage_scale
+                usage_index = usage.index
+                (data["AdjustedCost"])[usage_index] = (data["AdjustedCost"])[usage_index] * usage_rate
+
+                # if ri purchaseed
+                if len(ripo.index) > 0:
+                    null_rate = 0
+                    ripo_index = ripo.index
+                    (data["AdjustedCost"])[ripo_index] = null_rate
+
+
+
+            # average cost
+            #        if ri_cost > 0 and usage_cost > 0:
+            #            rate = cost/usage_cost
+            #            null_rate = 0
+
+            # set AdjustedCost according to index
+            #            ripo_index = ripo.index
+            #            usage_index = usage.index
+            # for idx in usage_index:
+            #            (data["AdjustedCost"])[usage_index] = (data["UnBlendedCost"])[usage_index] * rate
+
+            #            (data["AdjustedCost"])[ripo_index] = null_rate
+
+            #product = name[0]
 
             # check product
             # if product == "Amazon RDS Service" \
@@ -331,59 +424,59 @@ class AWS_Calc_Bill(object):
             #    or product == "Amazon Relational Database Service" \
             #    or product == "Amazon Redshift":
 
-            if product == "Amazon RDS Service" \
-                or product == "Amazon Relational Database Service":\
+            #if product == "Amazon RDS Service" \
+            #    or product == "Amazon Relational Database Service":\
 
                 # check ri purchase order
-                ripo = group[(group.ResourceId.isnull())]  # & (group.ReservedInstance == "Y")
-                usage = group[~(group.ResourceId.isnull())]  # | (group.ReservedInstance == "N")]
+            #    ripo = group[(group.ResourceId.isnull())]  # & (group.ReservedInstance == "Y")
+            #    usage = group[~(group.ResourceId.isnull())]  # | (group.ReservedInstance == "N")]
 
                 # if ri purchaseed
-                if len(ripo.index) > 0:
+            #    if len(ripo.index) > 0:
                     # total cost
-                    cost = group["UnBlendedCost"].sum()
-                    ri_cost = ripo["UnBlendedCost"].sum()
-                    usage_cost = usage["UnBlendedCost"].sum()
-                    usage_count = usage["UnBlendedCost"].count()
+            #        cost = group["UnBlendedCost"].sum()
+            #        ri_cost = ripo["UnBlendedCost"].sum()
+            #        usage_cost = usage["UnBlendedCost"].sum()
+            #        usage_count = usage["UnBlendedCost"].count()
 
                     # average cost
-                    if ri_cost > 0 and usage_count > 0:
-                        rate = cost / usage_count
-                        null_rate = 0
+            #        if ri_cost > 0 and usage_count > 0:
+            #            rate = cost / usage_count
+            #            null_rate = 0
 
                         # set AdjustedCost according to index
-                        ripo_index = ripo.index
-                        usage_index = usage.index
+            #            ripo_index = ripo.index
+            #            usage_index = usage.index
                         # for idx in usage_index:
-                        (data["AdjustedCost"])[usage_index] = rate
+            #            (data["AdjustedCost"])[usage_index] = rate
 
-                        (data["AdjustedCost"])[ripo_index] = null_rate
+            #            (data["AdjustedCost"])[ripo_index] = null_rate
 
-            else:
+            #else:
                 # check ri purchase order
-                ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
-                usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
+            #    ripo = group[(group.ResourceId.isnull())]    #& (group.ReservedInstance == "Y")
+            #    usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
 
                 # if ri purchaseed
-                if len(ripo.index) > 0:
+            #    if len(ripo.index) > 0:
                     # total cost
-                    cost = group["UnBlendedCost"].sum()
-                    ri_cost = ripo["UnBlendedCost"].sum()
-                    usage_cost = usage["UnBlendedCost"].sum()
+            #        cost = group["UnBlendedCost"].sum()
+            #        ri_cost = ripo["UnBlendedCost"].sum()
+            #        usage_cost = usage["UnBlendedCost"].sum()
 
 
                     # average cost
-                    if ri_cost > 0 and usage_cost > 0:
-                        rate = cost/usage_cost
-                        null_rate = 0
+            #        if ri_cost > 0 and usage_cost > 0:
+            #            rate = cost/usage_cost
+            #            null_rate = 0
 
                         # set AdjustedCost according to index
-                        ripo_index = ripo.index
-                        usage_index = usage.index
+            #            ripo_index = ripo.index
+            #            usage_index = usage.index
                         #for idx in usage_index:
-                        (data["AdjustedCost"])[usage_index] = (data["UnBlendedCost"])[usage_index] * rate
+            #            (data["AdjustedCost"])[usage_index] = (data["UnBlendedCost"])[usage_index] * rate
 
-                        (data["AdjustedCost"])[ripo_index] = null_rate
+            #            (data["AdjustedCost"])[ripo_index] = null_rate
 
 
 
