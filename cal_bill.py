@@ -679,10 +679,10 @@ class AWS_Calc_Bill(object):
         self.tag_metric_monitor_usage(data = data)
 
         # set dynamodb lost tag to ztjy only
-        self.cli.msg("Tag DynamoDB......" )
-        dynamo = data[data["ProductName"]=="Amazon DynamoDB"]
-        idx = dynamo.index
-        data["user:Project"][idx] = self.config.lost_tag["value"]
+        #self.cli.msg("Tag DynamoDB......" )
+        #dynamo = data[data["ProductName"]=="Amazon DynamoDB"]
+        #idx = dynamo.index
+        #data["user:Project"][idx] = self.config.lost_tag["value"]
 
 
         # left join merge bill and tags
