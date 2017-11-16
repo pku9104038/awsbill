@@ -144,6 +144,8 @@ class AWS_Calc_Bill(object):
             product = name[0]
             usage_type = name[1]
             desc = name[2]
+            platform = product
+            instance_type = usage_type
 
             # DynamoDB
             if product == "Amazon DynamoDB":
@@ -155,8 +157,6 @@ class AWS_Calc_Bill(object):
                     instance_type =  "ReadCapacity"
                 elif usage_type.find("TimedStorage") > -1:
                     instance_type = "TimedStorage"
-
-
 
             # ElastiCache
             elif product == "Amazon ElastiCache":
@@ -292,6 +292,7 @@ class AWS_Calc_Bill(object):
                     else:
                         platform = "EC2"
 
+
             # set InstanceType , Platform
             index = group.index
             data["InstanceType"][index] = instance_type
@@ -386,7 +387,7 @@ class AWS_Calc_Bill(object):
         for name, group in grouped:
             ripo = group[(group.ResourceId.isnull())]  # & (group.ReservedInstance == "Y")
             usage = group[~(group.ResourceId.isnull())] # | (group.ReservedInstance == "N")]
-            
+
             if len(usage.index) > 0:
                 cost = group["UnBlendedCost"].sum()
                 usage_scale = usage["InstanceScale"].sum()
