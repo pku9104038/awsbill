@@ -137,6 +137,7 @@ class AWS_Calc_Bill(object):
         data.loc[:, "InstanceSeries"] = instance_series
         data.loc[:, "InstanceSize"] = instance_size
         data.loc[:, "InstanceScale"] = instance_scale
+        data.loc[:, "InstanceUsage"] = data.loc[:, "UsageQuantity"]
 
         grouped = data.groupby(["ProductName","UsageType","ItemDescription"])
 
@@ -333,6 +334,8 @@ class AWS_Calc_Bill(object):
         data["InstanceSize"][index] = "Round"
         data["InstanceScale"][index] = 1
 
+        data["InstanceUsage"] = data["UsageQuantity"] * data["InstanceScale"]
+
     def tag_metric_monitor_usage(self, data):
         """
 
@@ -390,10 +393,10 @@ class AWS_Calc_Bill(object):
 
             if len(usage.index) > 0:
                 cost = group["UnBlendedCost"].sum()
-                usage_scale = usage["InstanceScale"].sum()
+                usage_scale = usage["InstanceUsage"].sum()
                 usage_rate = cost/usage_scale
                 usage_index = usage.index
-                (data["AdjustedCost"])[usage_index] = (data["AdjustedCost"])[usage_index] * usage_rate
+                (data["AdjustedCost"])[usage_index] = (data["InstanceUsage"])[usage_index] * usage_rate
 
                 # if ri purchaseed
                 if len(ripo.index) > 0:
