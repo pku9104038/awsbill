@@ -95,6 +95,8 @@ bill_columns:
     - "InstanceSeries"
     - "InstanceSize"
     - "InstanceScale"
+
+
   raw:
     - "InvoiceID"
     - "PayerAccountId"
@@ -123,6 +125,7 @@ bill_columns:
     - "user:billTag"
     - "user:Division"
     - "user:Customer"
+
   calc_read_csv_dtype:
     InvoiceId: "str"
     PayerAccountId: "str"
