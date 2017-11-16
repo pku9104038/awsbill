@@ -65,13 +65,13 @@ class AWS_Tag_Volume(object):
 def main():
     commandline = cli.CommandLine()
     commandline.get_options()
-    commandline.set_options(profile="dianda")
+    #commandline.set_options(profile="dianda")
     config = cfg.Config(commandline.option)
 
     aws_tag_volume = AWS_Tag_Volume(config=config,commandline=commandline)
 
-    aws_tag_volume.tag_volumes(profile="dianda")
-    aws_tag_volume.tag_volumes(profile="bill")
+    #aws_tag_volume.tag_volumes(profile="dianda")
+    aws_tag_volume.tag_volumes(profile=config.profile)
 
     """
     response = aws_tag_volume.ec2_client.describe_volumes()
