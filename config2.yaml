@@ -101,7 +101,7 @@ bill_columns:
     - "InstanceSeries"
     - "InstanceSize"
     - "InstanceScale"
-
+    - "InstanceUsage"
 
   raw:
     - "InvoiceID"
