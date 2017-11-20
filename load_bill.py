@@ -385,16 +385,26 @@ def main():
     month = config.end_month
     aws_load_bill.delete_month_rows(table=aws_load_bill.config.redshift_t_history, \
                                month=month)
-
-    aws_load_bill.table_copy(table=aws_load_bill.config.redshift_t_history, \
+    calc_key = "s3://" + aws_load_bill.config.proc_bucket + "/" + \
+                      aws_load_bill.config.cal_folder + \
+                      aws_load_bill.config.cal_prefix +month
+    est_key = "s3://" + aws_load_bill.config.proc_bucket + "/" + \
+                      aws_load_bill.config.cal_folder + \
+                      aws_load_bill.config.estimated_prefix +month
+    try:
+        aws_load_bill.table_copy(table=aws_load_bill.config.redshift_t_history, \
                 s3key="s3://" + aws_load_bill.config.proc_bucket + "/" + \
                       aws_load_bill.config.cal_folder + \
                       aws_load_bill.config.cal_prefix +month)
-
-
-
-    #print "\n"
-    aws_load_bill.cli.msg("You got it !  Cheers!")
+    except Exception as err:
+        print(err)
+        aws_load_bill.table_copy(table=aws_load_bill.config.redshift_t_history, \
+                             s3key="s3://" + aws_load_bill.config.proc_bucket + "/" + \
+                                   aws_load_bill.config.cal_folder + \
+                                   aws_load_bill.config.estimated_prefix + month)
+    finally:
+        #print "\n"
+        aws_load_bill.cli.msg("You got it !  Cheers!")
 
 
 if __name__ == '__main__':
